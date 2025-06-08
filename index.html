@@ -1,1275 +1,1371 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>NovelAI 图片解析</title>
-    <style>
-      * {
-        margin: 0;
-        padding: 0;
-        box-sizing: border-box;
-      }
 
-      body {
-        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-        background-color: #f5f7fa;
-        color: #333;
-        min-height: 100vh;
-      }
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>NovelAI 图片解析</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
 
-      .container {
-        max-width: 1400px;
-        margin: 0 auto;
-        padding: 20px;
-      }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      background-color: #f5f7fa;
+      color: #333;
+      min-height: 100vh;
+    }
 
-      .header {
-        text-align: center;
-        margin-bottom: 30px;
-        padding: 20px;
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        color: white;
-        border-radius: 16px;
-        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
-      }
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 20px;
+    }
 
-      .header h1 {
-        font-size: 2.5rem;
-        margin-bottom: 10px;
-        font-weight: 700;
-      }
+    .header {
+      text-align: center;
+      margin-bottom: 30px;
+      padding: 20px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border-radius: 16px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+    }
 
-      .header p {
-        font-size: 1.1rem;
-        opacity: 0.9;
-      }
+    .header h1 {
+      font-size: 2.5rem;
+      margin-bottom: 10px;
+      font-weight: 700;
+    }
 
+    .header p {
+      font-size: 1.1rem;
+      opacity: 0.9;
+    }
+
+    .main-content {
+      display: grid;
+      grid-template-columns: 2fr 3fr;
+      gap: 30px;
+      align-items: start;
+    }
+
+    @media (max-width: 968px) {
       .main-content {
-        display: grid;
-        grid-template-columns: 2fr 3fr;
-        gap: 30px;
-        align-items: start;
-      }
-
-      @media (max-width: 968px) {
-        .main-content {
-          grid-template-columns: 1fr;
-          gap: 15px;
-        }
-
-        .left-column {
-          margin-bottom: 0;
-        }
-
-        .technical-panel {
-          margin-bottom: 0;
-        }
-
-        .right-panel {
-          margin-top: 0;
-        }
+        grid-template-columns: 1fr;
+        gap: 15px;
       }
 
       .left-column {
-        display: flex;
-        flex-direction: column;
-        gap: 20px;
-      }
-
-      .left-panel {
-        background: white;
-        border-radius: 16px;
-        padding: 30px;
-        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-        display: flex;
-        flex-direction: column;
-        align-items: center;
+        margin-bottom: 0;
       }
 
       .technical-panel {
-        background: white;
-        border-radius: 16px;
-        padding: 30px;
-        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-      }
-
-      .upload-area {
-        border: 3px dashed #e0e6ed;
-        border-radius: 12px;
-        padding: 60px 20px;
-        text-align: center;
-        cursor: pointer;
-        transition: all 0.3s ease;
-        background: #f8f9fc;
-        width: 100%;
-        min-height: 350px;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        position: relative;
-        overflow: hidden;
-      }
-
-      .upload-area:hover {
-        border-color: #667eea;
-        background: #f0f2ff;
-      }
-
-      .upload-area.drag-over {
-        border-color: #667eea;
-        background: #e8ebff;
-        transform: scale(1.02);
-      }
-
-      .upload-area.has-image {
-        padding: 20px;
-        background: #fff;
-        cursor: default;
-        min-height: auto;
-        border-color: #d0d7de;
-      }
-
-      .upload-area.has-image:hover {
-        background: #f8f9fc;
-        border-color: #667eea;
-      }
-
-      .upload-area.has-image .preview-image {
-        cursor: pointer;
-      }
-
-      .image-info-compact {
-        text-align: center;
-        margin-top: 15px;
-        padding-top: 15px;
-        border-top: 1px solid #e8ebf4;
-        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-        width: 100%;
-      }
-
-      .image-info-compact .image-filename {
-        font-size: 0.95rem;
-        color: #333;
-        font-weight: 500;
-        margin-bottom: 5px;
-        white-space: nowrap;
-        overflow: hidden;
-        cursor: pointer;
-        transition: color 0.2s ease;
-      }
-
-      .image-info-compact .image-filename:hover {
-        color: #667eea;
-      }
-
-      .image-info-compact .image-details {
-        font-size: 0.85rem;
-        color: #666;
-        cursor: help;
-      }
-
-      .section-icon {
-        color: #667eea;
-      }
-
-      #uploadContent {
-        width: 100%;
-        height: 100%;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-      }
-
-      .upload-icon {
-        font-size: 48px;
-        color: #667eea;
-        margin-bottom: 20px;
-      }
-
-      .upload-text {
-        color: #666;
-        font-size: 1.1rem;
-        margin-bottom: 10px;
-      }
-
-      .upload-hint {
-        color: #999;
-        font-size: 0.9rem;
-      }
-
-      .preview-image {
-        max-width: 100%;
-        max-height: 350px;
-        border-radius: 8px;
-        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
-        display: block;
-        margin: 0 auto;
-        cursor: pointer;
-      }
-
-      .preview-image:hover {
-        box-shadow: 0 6px 25px rgba(0, 0, 0, 0.15);
-      }
-
-      .image-filename {
-        font-size: 1.1rem;
-        font-weight: 500;
-        color: #333;
-        margin-bottom: 10px;
-        word-break: break-all;
-      }
-
-      .image-details {
-        display: flex;
-        justify-content: center;
-        gap: 20px;
-        flex-wrap: wrap;
-        margin-top: 10px;
-      }
-
-      .detail-item {
-        display: flex;
-        align-items: center;
-        gap: 6px;
-        font-size: 0.9rem;
-        color: #666;
-      }
-
-      .detail-label {
-        color: #999;
-      }
-
-      .detail-value {
-        color: #333;
-        font-weight: 500;
+        margin-bottom: 0;
       }
 
       .right-panel {
-        background: white;
-        border-radius: 16px;
-        padding: 30px;
-        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-        max-height: 90vh;
-        overflow-y: auto;
+        margin-top: 0;
       }
+    }
 
-      .info-section {
-        margin-bottom: 30px;
-      }
+    .left-column {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
 
-      .section-title {
-        font-size: 1.5rem;
-        font-weight: 600;
-        margin-bottom: 20px;
-        color: #444;
-        display: flex;
-        align-items: center;
-        gap: 10px;
-      }
+    .left-panel {
+      background: white;
+      border-radius: 16px;
+      padding: 30px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
 
-      .info-item {
-        background: #f8f9fc;
-        border-radius: 12px;
-        padding: 20px;
-        margin-bottom: 15px;
-        border: 1px solid #e8ebf4;
-        transition: all 0.3s ease;
-      }
+    .technical-panel {
+      background: white;
+      border-radius: 16px;
+      padding: 30px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+    }
 
-      .info-item:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-      }
+    .upload-area {
+      border: 3px dashed #e0e6ed;
+      border-radius: 12px;
+      padding: 60px 20px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      background: #f8f9fc;
+      width: 100%;
+      min-height: 350px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      overflow: hidden;
+    }
 
-      .info-label {
-        font-weight: 600;
-        color: #555;
-        margin-bottom: 8px;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-      }
+    .upload-area:hover {
+      border-color: #667eea;
+      background: #f0f2ff;
+    }
 
-      .info-value {
-        color: #666;
-        line-height: 1.6;
-        word-break: break-word;
-        white-space: pre-wrap;
-        font-family: "Monaco", "Consolas", monospace;
-        font-size: 0.9rem;
-      }
+    .upload-area.drag-over {
+      border-color: #667eea;
+      background: #e8ebff;
+      transform: scale(1.02);
+    }
 
-      .info-value.formatted-prompt {
-        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-        font-size: 0.95rem;
-        line-height: 1.7;
-        word-break: break-word;
-        overflow-wrap: break-word;
-      }
+    .upload-area.has-image {
+      padding: 20px;
+      background: #fff;
+      cursor: default;
+      min-height: auto;
+      border-color: #d0d7de;
+    }
 
-      /* Prompt权重高亮样式 */
-      .prompt-tag {
-        display: inline;
-        white-space: nowrap;
-      }
+    .upload-area.has-image:hover {
+      background: #f8f9fc;
+      border-color: #667eea;
+    }
 
-      .prompt-tag.weight-high {
-        color: #e53e3e;
-      }
+    .upload-area.has-image .preview-image {
+      cursor: pointer;
+    }
 
-      .prompt-tag.weight-low {
-        color: #3182ce;
-      }
+    .image-info-compact {
+      text-align: center;
+      margin-top: 15px;
+      padding-top: 15px;
+      border-top: 1px solid #e8ebf4;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      width: 100%;
+    }
 
-      .prompt-tag.weight-normal {
-        color: #333;
-      }
+    .image-info-compact .image-filename {
+      font-size: 0.95rem;
+      color: #333;
+      font-weight: 500;
+      margin-bottom: 5px;
+      white-space: nowrap;
+      overflow: hidden;
+      cursor: pointer;
+      transition: color 0.2s ease;
+    }
 
-      .prompt-tag.default-tag {
-        color: #a0aec0;
-        opacity: 0.7;
-      }
+    .image-info-compact .image-filename:hover {
+      color: #667eea;
+    }
 
-      .prompt-weight-marker {
-        color: #805ad5;
-        font-weight: 600;
-        opacity: 0.8;
-        white-space: nowrap;
-      }
+    .image-info-compact .image-details {
+      font-size: 0.85rem;
+      color: #666;
+      cursor: help;
+    }
 
-      .prompt-comma {
-        color: #a0aec0;
-      }
+    .section-icon {
+      color: #667eea;
+    }
 
+    #uploadContent {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .upload-icon {
+      font-size: 48px;
+      color: #667eea;
+      margin-bottom: 20px;
+    }
+
+    .upload-text {
+      color: #666;
+      font-size: 1.1rem;
+      margin-bottom: 10px;
+    }
+
+    .upload-hint {
+      color: #999;
+      font-size: 0.9rem;
+    }
+
+    .preview-image {
+      max-width: 100%;
+      max-height: 350px;
+      border-radius: 8px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+      display: block;
+      margin: 0 auto;
+      cursor: pointer;
+    }
+
+    .preview-image:hover {
+      box-shadow: 0 6px 25px rgba(0, 0, 0, 0.15);
+    }
+
+    .image-filename {
+      font-size: 1.1rem;
+      font-weight: 500;
+      color: #333;
+      margin-bottom: 10px;
+      word-break: break-all;
+    }
+
+    .image-details {
+      display: flex;
+      justify-content: center;
+      gap: 20px;
+      flex-wrap: wrap;
+      margin-top: 10px;
+    }
+
+    .detail-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.9rem;
+      color: #666;
+    }
+
+    .detail-label {
+      color: #999;
+    }
+
+    .detail-value {
+      color: #333;
+      font-weight: 500;
+    }
+
+    .right-panel {
+      background: white;
+      border-radius: 16px;
+      padding: 30px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+      max-height: 90vh;
+      overflow-y: auto;
+    }
+
+    .info-section {
+      margin-bottom: 30px;
+    }
+
+    .section-title {
+      font-size: 1.5rem;
+      font-weight: 600;
+      margin-bottom: 20px;
+      color: #444;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .info-item {
+      background: #f8f9fc;
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 15px;
+      border: 1px solid #e8ebf4;
+      transition: all 0.3s ease;
+    }
+
+    .info-item:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    }
+
+    .info-label {
+      font-weight: 600;
+      color: #555;
+      margin-bottom: 8px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .info-value {
+      color: #666;
+      line-height: 1.6;
+      word-break: break-word;
+      white-space: pre-wrap;
+      font-family: "Monaco", "Consolas", monospace;
+      font-size: 0.9rem;
+    }
+
+    .info-value.formatted-prompt {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      font-size: 0.95rem;
+      line-height: 1.7;
+      word-break: break-word;
+      overflow-wrap: break-word;
+    }
+
+    /* Prompt权重高亮样式 */
+    .prompt-tag {
+      display: inline;
+    }
+
+    .prompt-tag.weight-high {
+      color: #e53e3e;
+    }
+
+    .prompt-tag.weight-low {
+      color: #3182ce;
+    }
+
+    .prompt-tag.weight-normal {
+      color: #333;
+    }
+
+    .prompt-tag.default-tag {
+      color: #a0aec0;
+      opacity: 0.7;
+    }
+
+    .prompt-weight-marker {
+      color: #805ad5;
+      font-weight: 600;
+      opacity: 0.8;
+      white-space: nowrap;
+    }
+
+    .prompt-comma {
+      color: #a0aec0;
+    }
+
+    .tech-params {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+      gap: 15px;
+      background: #f8f9fc;
+      border-radius: 12px;
+      padding: 20px;
+      border: 1px solid #e8ebf4;
+    }
+
+    @media (max-width: 768px) {
       .tech-params {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-        gap: 15px;
-        background: #f8f9fc;
-        border-radius: 12px;
-        padding: 20px;
-        border: 1px solid #e8ebf4;
-      }
-
-      @media (max-width: 768px) {
-        .tech-params {
-          grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
-          gap: 12px;
-          padding: 15px;
-        }
-      }
-
-      .tech-param-item {
-        display: flex;
-        flex-direction: column;
-        gap: 4px;
-        cursor: pointer;
-        transition: background-color 0.2s ease;
-        padding: 8px;
-        border-radius: 6px;
-      }
-
-      .tech-param-item:hover {
-        background-color: rgba(102, 126, 234, 0.1);
-      }
-
-      .tech-param-item.wide {
-        grid-column: span 2;
-      }
-
-      .tech-param-label {
-        font-size: 0.85rem;
-        color: #888;
-        font-weight: 500;
-      }
-
-      .tech-param-value {
-        font-size: 0.95rem;
-        color: #333;
-        font-weight: 600;
-        font-family: "Monaco", "Consolas", monospace;
-      }
-
-      .copy-btn {
-        background: #667eea;
-        color: white;
-        border: none;
-        padding: 6px 12px;
-        border-radius: 6px;
-        cursor: pointer;
-        font-size: 0.85rem;
-        transition: all 0.3s ease;
-      }
-
-      .copy-btn:hover {
-        background: #5a67d8;
-        transform: translateY(-1px);
-      }
-
-      .copy-btn:active {
-        transform: translateY(0);
-      }
-
-      .json-viewer {
-        background: #f5f7fa;
-        border-radius: 8px;
+        grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+        gap: 12px;
         padding: 15px;
-        overflow-x: auto;
-        font-family: "Monaco", "Consolas", monospace;
-        font-size: 0.85rem;
       }
+    }
 
-      .loading {
-        text-align: center;
-        padding: 40px;
-        color: #999;
-      }
+    .tech-param-item {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      cursor: pointer;
+      transition: background-color 0.2s ease;
+      padding: 8px;
+      border-radius: 6px;
+      overflow-wrap: break-word;
+    }
 
-      .error {
-        background: #fee;
-        color: #c33;
-        padding: 15px;
-        border-radius: 8px;
-        margin-top: 20px;
-      }
+    .tech-param-item:hover {
+      background-color: rgba(102, 126, 234, 0.1);
+    }
 
-      .footer {
-        text-align: center;
-        margin-top: 50px;
-        padding: 20px;
-        color: #999;
-        font-size: 0.9rem;
-        clear: both;
-      }
+    .tech-param-item.wide {
+      grid-column: span 2;
+    }
 
-      .footer a {
-        color: #667eea;
-        text-decoration: none;
-      }
+    .tech-param-label {
+      font-size: 0.85rem;
+      color: #888;
+      font-weight: 500;
+    }
 
-      .footer a:hover {
-        text-decoration: underline;
-      }
+    .tech-param-value {
+      font-size: 0.95rem;
+      color: #333;
+      font-weight: 600;
+      font-family: "Monaco", "Consolas", monospace;
+    }
 
-      /* 滚动条样式 */
-      .right-panel::-webkit-scrollbar {
-        width: 8px;
-      }
+    .copy-btn {
+      background: #667eea;
+      color: white;
+      border: none;
+      padding: 6px 12px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 0.85rem;
+      transition: all 0.3s ease;
+    }
 
-      .right-panel::-webkit-scrollbar-track {
-        background: #f1f1f1;
-        border-radius: 4px;
-      }
+    .copy-btn:hover {
+      background: #5a67d8;
+      transform: translateY(-1px);
+    }
 
-      .right-panel::-webkit-scrollbar-thumb {
-        background: #ccc;
-        border-radius: 4px;
-      }
+    .copy-btn:active {
+      transform: translateY(0);
+    }
 
-      .right-panel::-webkit-scrollbar-thumb:hover {
-        background: #999;
-      }
+    .json-viewer {
+      background: #f5f7fa;
+      border-radius: 8px;
+      padding: 15px;
+      overflow-x: auto;
+      font-family: "Monaco", "Consolas", monospace;
+      font-size: 0.85rem;
+    }
 
-      /* 动画 */
-      @keyframes fadeIn {
-        from {
-          opacity: 0;
-          transform: translateY(10px);
-        }
-        to {
-          opacity: 1;
-          transform: translateY(0);
-        }
-      }
+    .loading {
+      text-align: center;
+      padding: 40px;
+      color: #999;
+    }
 
-      .info-item {
-        animation: fadeIn 0.5s ease;
-      }
+    .error {
+      background: #fee;
+      color: #c33;
+      padding: 15px;
+      border-radius: 8px;
+      margin-top: 20px;
+    }
 
-      .toast {
-        position: fixed;
-        top: 20px;
-        right: 20px;
-        background: #667eea;
-        color: white;
-        padding: 15px 25px;
-        border-radius: 8px;
-        box-shadow: 0 4px 20px rgba(102, 126, 234, 0.4);
+    .footer {
+      text-align: center;
+      margin-top: 50px;
+      padding: 20px;
+      color: #999;
+      font-size: 0.9rem;
+      clear: both;
+    }
+
+    .footer a {
+      color: #667eea;
+      text-decoration: none;
+    }
+
+    .footer a:hover {
+      text-decoration: underline;
+    }
+
+    /* 滚动条样式 */
+    .right-panel::-webkit-scrollbar {
+      width: 8px;
+    }
+
+    .right-panel::-webkit-scrollbar-track {
+      background: #f1f1f1;
+      border-radius: 4px;
+    }
+
+    .right-panel::-webkit-scrollbar-thumb {
+      background: #ccc;
+      border-radius: 4px;
+    }
+
+    .right-panel::-webkit-scrollbar-thumb:hover {
+      background: #999;
+    }
+
+    /* 动画 */
+    @keyframes fadeIn {
+      from {
         opacity: 0;
-        transform: translateY(-20px);
-        transition: all 0.3s ease;
-        z-index: 1000;
+        transform: translateY(10px);
       }
 
-      .toast.show {
+      to {
         opacity: 1;
         transform: translateY(0);
       }
-    </style>
-  </head>
-  <body>
-    <div class="container">
-      <div class="header">
-        <h1>🎨 NovelAI 图片解析</h1>
-        <p>从 NovelAI 生成的图片中提取详细参数信息</p>
-      </div>
+    }
 
-      <div class="main-content">
-        <div class="left-column">
-          <div class="left-panel">
-            <div class="upload-area" id="uploadArea">
-              <div id="uploadContent">
-                <div class="upload-icon">📁</div>
-                <div class="upload-text">拖拽图片到这里</div>
-                <div class="upload-hint">或点击选择文件</div>
-              </div>
-              <!-- 预览图片 -->
-              <img id="previewImage" class="preview-image" style="display: none" alt="预览图片" />
-              <!-- 基础信息 -->
-              <div class="image-info-compact" id="imageInfo" style="display: none">
-                <div class="image-filename" id="imageFilename"></div>
-                <div class="image-details" id="imageDetails"></div>
-              </div>
-              <input type="file" id="fileInput" accept="image/*" style="display: none" />
+    .info-item {
+      animation: fadeIn 0.5s ease;
+    }
+
+    .toast {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      background: #667eea;
+      color: white;
+      padding: 15px 25px;
+      border-radius: 8px;
+      box-shadow: 0 4px 20px rgba(102, 126, 234, 0.4);
+      opacity: 0;
+      transform: translateY(-20px);
+      transition: all 0.3s ease;
+      z-index: 1000;
+    }
+
+    .toast.show {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>🎨 NovelAI 图片解析</h1>
+      <p>从 NovelAI 生成的图片中提取详细参数信息</p>
+    </div>
+
+    <div class="main-content">
+      <div class="left-column">
+        <div class="left-panel">
+          <div class="upload-area" id="uploadArea">
+            <div id="uploadContent">
+              <div class="upload-icon">📁</div>
+              <div class="upload-text">拖拽图片到这里</div>
+              <div class="upload-hint">或点击选择文件</div>
             </div>
-          </div>
-
-          <!-- 技术参数区域 -->
-          <div class="technical-panel" id="technicalPanel" style="display: none">
-            <div id="technicalParams" class="tech-params"></div>
+            <!-- 预览图片 -->
+            <img id="previewImage" class="preview-image" style="display: none" alt="预览图片" />
+            <!-- 基础信息 -->
+            <div class="image-info-compact" id="imageInfo" style="display: none">
+              <div class="image-filename" id="imageFilename"></div>
+              <div class="image-details" id="imageDetails"></div>
+            </div>
+            <input type="file" id="fileInput" accept="image/*" style="display: none" />
           </div>
         </div>
 
-        <div class="right-panel" id="rightPanel" style="display: none">
-          <div id="infoContainer"></div>
+        <!-- 技术参数区域 -->
+        <div class="technical-panel" id="technicalPanel" style="display: none">
+          <div id="technicalParams" class="tech-params"></div>
         </div>
       </div>
 
-      <div class="footer">
-        <p>* 所有运算完全在您的设备上运行，不会上传到云端</p>
-        <p>Made by <a href="https://github.com/Natsukage">@Natsukage</a></p>
+      <div class="right-panel" id="rightPanel" style="display: none">
+        <div id="infoContainer"></div>
       </div>
     </div>
 
-    <div class="toast" id="toast"></div>
+    <div class="footer">
+      <p>* 所有运算完全在您的设备上运行，不会上传到云端</p>
+      <p>Made by <a href="https://github.com/Natsukage">@Natsukage</a></p>
+    </div>
+  </div>
 
-    <!-- 引入必要的库 -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/exif-js/2.3.0/exif.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/pako/2.1.0/pako.min.js"></script>
-    <script>
-      // 工具函数
-      function showToast(message) {
-        const toast = document.getElementById("toast");
-        toast.textContent = message;
-        toast.classList.add("show");
-        setTimeout(() => {
-          toast.classList.remove("show");
-        }, 3000);
-      }
+  <div class="toast" id="toast"></div>
 
-      function copyToClipboard(text) {
-        navigator.clipboard
-          .writeText(text)
-          .then(() => {
-            showToast("复制成功！");
-          })
-          .catch(() => {
-            showToast("复制失败，请手动复制");
-          });
-      }
+  <!-- 引入必要的库 -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pako/2.1.0/pako.min.js"></script>
+  <script>
+    // 工具函数
+    function showToast(message) {
+      const toast = document.getElementById("toast");
+      toast.textContent = message;
+      toast.classList.add("show");
+      setTimeout(() => {
+        toast.classList.remove("show");
+      }, 3000);
+    }
 
-      function formatFileSize(bytes) {
-        if (bytes < 1024) return bytes + " B";
-        else if (bytes < 1048576) return (bytes / 1024).toFixed(2) + " KB";
-        else return (bytes / 1048576).toFixed(2) + " MB";
-      }
-
-      // 处理文件名显示 - 中间省略，保留扩展名
-      function truncateFilename(filename, maxWidth) {
-        const canvas = document.createElement("canvas");
-        const context = canvas.getContext("2d");
-        context.font = '0.95rem -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
-
-        // 如果文件名宽度小于最大宽度，直接返回
-        if (context.measureText(filename).width <= maxWidth) {
-          return filename;
-        }
-
-        // 提取文件名和扩展名
-        const lastDotIndex = filename.lastIndexOf(".");
-        const extension = lastDotIndex !== -1 ? filename.substring(lastDotIndex) : "";
-        const nameWithoutExt = lastDotIndex !== -1 ? filename.substring(0, lastDotIndex) : filename;
-
-        // 计算省略号和扩展名的宽度
-        const ellipsisWidth = context.measureText("...").width;
-        const extensionWidth = context.measureText(extension).width;
-
-        // 预留至少3个字符的空间在省略号前，防止省略号紧贴扩展名
-        const minEndChars = Math.min(3, Math.floor(nameWithoutExt.length / 2));
-        const endPart = nameWithoutExt.substring(nameWithoutExt.length - minEndChars);
-        const endPartWidth = context.measureText(endPart).width;
-
-        const totalEndWidth = ellipsisWidth + endPartWidth + extensionWidth;
-        const availableWidth = maxWidth - totalEndWidth;
-
-        // 二分查找合适的截断长度
-        let start = 0;
-        let end = nameWithoutExt.length - minEndChars;
-        let bestLength = 0;
-
-        while (start <= end) {
-          const mid = Math.floor((start + end) / 2);
-          const truncated = nameWithoutExt.substring(0, mid);
-          const width = context.measureText(truncated).width;
-
-          if (width <= availableWidth) {
-            bestLength = mid;
-            start = mid + 1;
-          } else {
-            end = mid - 1;
-          }
-        }
-
-        if (bestLength === 0) {
-          return "..." + endPart + extension;
-        }
-
-        return nameWithoutExt.substring(0, bestLength) + "..." + endPart + extension;
-      }
-
-      // Prompt格式化函数
-      function formatPrompt(prompt) {
-        if (!prompt || typeof prompt !== "string") return prompt;
-
-        // 1. 去除转义字符
-        let formatted = prompt.replace(/\\([()])/g, "$1");
-
-        // 2. 去除多余的连续逗号
-        formatted = formatted.replace(/,{2,}/g, ",");
-
-        // 3. 标准化逗号后的空格：确保逗号后有且仅有一个空格
-        formatted = formatted.replace(/,\s*/g, ", ");
-
-        // 4. 去除开头和结尾的逗号和空格
-        formatted = formatted.replace(/^[\s,]+|[\s,]+$/g, "");
-
-        return formatted;
-      }
-
-      // NovelAI默认提示词
-      const NOVELAI_DEFAULT_POSITIVE_TAGS = ["very aesthetic", "location", "masterpiece", "no text", "feet", "rating:general"];
-
-      const NOVELAI_DEFAULT_NEGATIVE_TAGS = [
-        "blurry",
-        "lowres",
-        "upscaled",
-        "artistic error",
-        "film grain",
-        "scan artifacts",
-        "worst quality",
-        "bad quality",
-        "jpeg artifacts",
-        "very displeasing",
-        "chromatic aberration",
-        "halftone",
-        "multiple views",
-        "logo",
-        "too many watermarks",
-        "negative space",
-        "blank page",
-      ];
-
-      // 检查是否为默认tag
-      function isDefaultTag(tagContent, isNegativePrompt = false) {
-        const content = tagContent.toLowerCase().trim();
-        const defaultTags = isNegativePrompt ? NOVELAI_DEFAULT_NEGATIVE_TAGS : NOVELAI_DEFAULT_POSITIVE_TAGS;
-        return defaultTags.some((defaultTag) => content === defaultTag.toLowerCase() || content.includes(defaultTag.toLowerCase()));
-      }
-
-      // NovelAI权重解析器
-      function parsePromptWeights(prompt) {
-        const tokens = [];
-        let i = 0;
-        let currentWeight = 1.0;
-        const weightStack = [1.0]; // 用于处理嵌套权重
-
-        while (i < prompt.length) {
-          const char = prompt[i];
-
-          // 处理数字权重语法：数字::
-          if (char.match(/[-\d]/) && prompt.substring(i).match(/^[-\d.]+::/)) {
-            const match = prompt.substring(i).match(/^([-\d.]+)::/);
-            if (match) {
-              const weight = parseFloat(match[1]);
-              tokens.push({
-                type: "weight-marker",
-                content: match[0],
-                weight: weight,
-              });
-              currentWeight = weight;
-              weightStack.push(weight); // 推入新权重
-              i += match[0].length;
-              continue;
-            }
-          }
-
-          // 处理权重结束标记：::
-          if (prompt.substring(i, i + 2) === "::") {
-            tokens.push({
-              type: "weight-marker",
-              content: "::",
-              weight: 1.0,
-            });
-            // 恢复到权重栈的上一层
-            if (weightStack.length > 1) {
-              weightStack.pop();
-              currentWeight = weightStack[weightStack.length - 1];
-            } else {
-              currentWeight = 1.0;
-            }
-            i += 2;
-            continue;
-          }
-
-          // 处理旧式权重：{ 和 [
-          if (char === "{") {
-            const newWeight = currentWeight * 1.1;
-            tokens.push({
-              type: "weight-marker",
-              content: "{",
-              weight: newWeight,
-            });
-            currentWeight = newWeight;
-            weightStack.push(newWeight);
-            i++;
-            continue;
-          }
-
-          if (char === "[") {
-            const newWeight = currentWeight / 1.1;
-            tokens.push({
-              type: "weight-marker",
-              content: "[",
-              weight: newWeight,
-            });
-            currentWeight = newWeight;
-            weightStack.push(newWeight);
-            i++;
-            continue;
-          }
-
-          if (char === "}" || char === "]") {
-            tokens.push({
-              type: "weight-marker",
-              content: char,
-              weight: 1.0,
-            });
-            if (weightStack.length > 1) {
-              weightStack.pop();
-              currentWeight = weightStack[weightStack.length - 1];
-            } else {
-              currentWeight = 1.0;
-            }
-            i++;
-            continue;
-          }
-
-          // 处理逗号
-          if (char === ",") {
-            tokens.push({
-              type: "comma",
-              content: char,
-              weight: 1.0,
-            });
-            i++;
-            // 跳过逗号后的空格
-            while (i < prompt.length && prompt[i] === " ") {
-              i++;
-            }
-            continue;
-          }
-
-          // 跳过其他空格
-          if (char === " ") {
-            i++;
-            continue;
-          }
-
-          // 处理普通文本
-          let textContent = "";
-          while (i < prompt.length) {
-            const currentChar = prompt[i];
-            const nextTwoChars = prompt.substring(i, i + 2);
-
-            // 检查是否遇到权重标记的开始
-            if (prompt.substring(i).match(/^[-\d.]+::/)) {
-              break;
-            }
-
-            // 检查是否遇到权重结束标记
-            if (nextTwoChars === "::") {
-              break;
-            }
-
-            // 检查是否遇到括号或逗号
-            if ("{[}],".includes(currentChar)) {
-              break;
-            }
-
-            textContent += currentChar;
-            i++;
-          }
-
-          if (textContent.trim()) {
-            tokens.push({
-              type: "text",
-              content: textContent.trim(),
-              weight: currentWeight,
-            });
-          }
-        }
-
-        return tokens;
-      }
-
-      // 渲染权重高亮的Prompt
-      function renderHighlightedPrompt(prompt, isNegativePrompt = false) {
-        const formatted = formatPrompt(prompt);
-        const tokens = parsePromptWeights(formatted);
-
-        let html = "";
-
-        tokens.forEach((token, index) => {
-          if (token.type === "weight-marker") {
-            html += `<span class="prompt-weight-marker">${escapeHtml(token.content)}</span>`;
-          } else if (token.type === "comma") {
-            // 在逗号后添加真实空格，给浏览器正确的换行位置
-            html += `<span class="prompt-comma">${escapeHtml(token.content)}</span> `;
-          } else if (token.type === "text" && token.content) {
-            let className = "prompt-tag weight-normal";
-
-            // 检查是否为默认tag
-            const isDefault = isDefaultTag(token.content, isNegativePrompt);
-
-            if (isDefault) {
-              className = "prompt-tag default-tag";
-            } else if (Math.abs(token.weight) > 1.0) {
-              className = "prompt-tag weight-high";
-            } else if (Math.abs(token.weight) < 1.0 && token.weight !== 0) {
-              className = "prompt-tag weight-low";
-            }
-
-            html += `<span class="${className}">${escapeHtml(token.content)}</span>`;
-
-            // 在文本token后添加空格，除非下一个token是逗号或权重标记
-            if (index < tokens.length - 1) {
-              const nextToken = tokens[index + 1];
-              if (nextToken.type !== "comma" && nextToken.type !== "weight-marker") {
-                html += " ";
-              }
-            }
-          }
+    function copyToClipboard(text) {
+      navigator.clipboard
+        .writeText(text)
+        .then(() => {
+          showToast("复制成功！");
+        })
+        .catch(() => {
+          showToast("复制失败，请手动复制");
         });
+    }
 
-        return html;
+    function formatFileSize(bytes) {
+      if (bytes < 1024) return bytes + " B";
+      else if (bytes < 1048576) return (bytes / 1024).toFixed(2) + " KB";
+      else return (bytes / 1048576).toFixed(2) + " MB";
+    }
+
+    // 处理文件名显示 - 中间省略，保留扩展名
+    function truncateFilename(filename, maxWidth) {
+      const canvas = document.createElement("canvas");
+      const context = canvas.getContext("2d");
+      context.font = '0.95rem -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+
+      // 如果文件名宽度小于最大宽度，直接返回
+      if (context.measureText(filename).width <= maxWidth) {
+        return filename;
       }
 
-      // HTML转义函数
-      function escapeHtml(text) {
-        const div = document.createElement("div");
-        div.textContent = text;
-        return div.innerHTML;
-      }
+      // 提取文件名和扩展名
+      const lastDotIndex = filename.lastIndexOf(".");
+      const extension = lastDotIndex !== -1 ? filename.substring(lastDotIndex) : "";
+      const nameWithoutExt = lastDotIndex !== -1 ? filename.substring(0, lastDotIndex) : filename;
 
-      // PNG Chunk 解析
-      function extractPngChunks(arrayBuffer) {
-        const dataView = new DataView(arrayBuffer);
-        const chunks = [];
-        let offset = 8; // Skip PNG signature
+      // 计算省略号和扩展名的宽度
+      const ellipsisWidth = context.measureText("...").width;
+      const extensionWidth = context.measureText(extension).width;
 
-        while (offset < arrayBuffer.byteLength) {
-          const length = dataView.getUint32(offset);
-          const type = String.fromCharCode(dataView.getUint8(offset + 4), dataView.getUint8(offset + 5), dataView.getUint8(offset + 6), dataView.getUint8(offset + 7));
+      // 预留至少3个字符的空间在省略号前，防止省略号紧贴扩展名
+      const minEndChars = Math.min(3, Math.floor(nameWithoutExt.length / 2));
+      const endPart = nameWithoutExt.substring(nameWithoutExt.length - minEndChars);
+      const endPartWidth = context.measureText(endPart).width;
 
-          const data = new Uint8Array(arrayBuffer, offset + 8, length);
-          chunks.push({ type, data });
+      const totalEndWidth = ellipsisWidth + endPartWidth + extensionWidth;
+      const availableWidth = maxWidth - totalEndWidth;
 
-          offset += length + 12; // length + type + data + crc
-        }
+      // 二分查找合适的截断长度
+      let start = 0;
+      let end = nameWithoutExt.length - minEndChars;
+      let bestLength = 0;
 
-        return chunks;
-      }
+      while (start <= end) {
+        const mid = Math.floor((start + end) / 2);
+        const truncated = nameWithoutExt.substring(0, mid);
+        const width = context.measureText(truncated).width;
 
-      function decodePngTextChunk(data, chunkType) {
-        if (chunkType === "tEXt") {
-          const nullIndex = data.indexOf(0);
-          const keyword = new TextDecoder().decode(data.slice(0, nullIndex));
-          const text = new TextDecoder().decode(data.slice(nullIndex + 1));
-          return { keyword, text };
-        } else if (chunkType === "iTXt") {
-          // iTXt格式更复杂，包含压缩标志和语言标签
-          let offset = 0;
-
-          // 读取keyword
-          const keywordEnd = data.indexOf(0, offset);
-          const keyword = new TextDecoder().decode(data.slice(offset, keywordEnd));
-          offset = keywordEnd + 1;
-
-          // 跳过压缩标志和压缩方法
-          offset += 2;
-
-          // 跳过语言标签
-          const langEnd = data.indexOf(0, offset);
-          offset = langEnd + 1;
-
-          // 跳过翻译后的keyword
-          const transKeywordEnd = data.indexOf(0, offset);
-          offset = transKeywordEnd + 1;
-
-          // 剩余的是文本内容
-          const text = new TextDecoder().decode(data.slice(offset));
-
-          return { keyword, text };
-        }
-        return { keyword: "Unknown", text: "" };
-      }
-
-      // 解析NovelAI的JSON数据
-      function parseNovelAIData(details) {
-        const result = {
-          basic: [],
-          prompts: [],
-          technical: [],
-        };
-
-        // 主Prompt
-        if (details.prompt) {
-          result.prompts.push({
-            label: "主Prompt",
-            value: details.prompt,
-            copyable: true,
-          });
-        }
-
-        // 负面Prompt
-        if (details.uc) {
-          result.prompts.push({
-            label: "负面Prompt",
-            value: details.uc,
-            copyable: true,
-          });
-        }
-
-        // V4 角色Prompts - 按照角色顺序显示
-        const charPrompts = [];
-        const charNegativePrompts = [];
-
-        if (details.v4_prompt && details.v4_prompt.caption && details.v4_prompt.caption.char_captions) {
-          details.v4_prompt.caption.char_captions.forEach((char, index) => {
-            if (char.char_caption && char.char_caption.trim()) {
-              charPrompts[index] = {
-                label: `角色${index + 1} Prompt`,
-                value: char.char_caption,
-                copyable: true,
-              };
-            }
-          });
-        }
-
-        if (details.v4_negative_prompt && details.v4_negative_prompt.caption && details.v4_negative_prompt.caption.char_captions) {
-          details.v4_negative_prompt.caption.char_captions.forEach((char, index) => {
-            if (char.char_caption && char.char_caption.trim()) {
-              charNegativePrompts[index] = {
-                label: `角色${index + 1} 负面Prompt`,
-                value: char.char_caption,
-                copyable: true,
-              };
-            }
-          });
-        }
-
-        // 按照角色顺序添加Prompt和负面Prompt
-        const maxCharIndex = Math.max(charPrompts.length, charNegativePrompts.length);
-        for (let i = 0; i < maxCharIndex; i++) {
-          if (charPrompts[i]) {
-            result.prompts.push(charPrompts[i]);
-          }
-          if (charNegativePrompts[i]) {
-            result.prompts.push(charNegativePrompts[i]);
-          }
-        }
-
-        // 技术参数
-        result.technical.push({
-          label: "采样器",
-          value: details.sampler || "Unknown",
-        });
-        result.technical.push({
-          label: "步数",
-          value: details.steps || "Unknown",
-        });
-        result.technical.push({
-          label: "尺寸",
-          value: `${details.width || "?"} × ${details.height || "?"}`,
-        });
-        result.technical.push({
-          label: "CFG Scale",
-          value: details.scale || "Unknown",
-        });
-        result.technical.push({
-          label: "种子",
-          value: details.seed || "Unknown",
-        });
-        if (details.noise_schedule) {
-          result.technical.push({
-            label: "噪声计划",
-            value: details.noise_schedule,
-          });
-        }
-        if (details.cfg_rescale !== undefined) {
-          result.technical.push({
-            label: "CFG Rescale",
-            value: details.cfg_rescale,
-          });
-        }
-        if (details.strength !== undefined) {
-          result.technical.push({
-            label: "Strength",
-            value: details.strength,
-          });
-        }
-        if (details.noise !== undefined) {
-          result.technical.push({
-            label: "Noise",
-            value: details.noise,
-          });
-        }
-        if (details.generation_time !== undefined) {
-          result.technical.push({
-            label: "生成时间",
-            value: `${details.generation_time.toFixed(4)}s`,
-          });
-        }
-        if (details.request_type) {
-          result.technical.push({
-            label: "请求类型",
-            value: details.request_type,
-            wide: true,
-          });
-        }
-
-        return result;
-      }
-
-      // 处理WebUI格式
-      function parseWebUIData(text) {
-        const result = {
-          prompts: [],
-          technical: [],
-        };
-
-        const parts = text.split("Steps: ");
-        if (parts.length >= 2) {
-          const promptPart = parts[0];
-          const paramsPart = "Steps: " + parts[1];
-
-          const promptSplit = promptPart.split("Negative prompt: ");
-
-          result.prompts.push({
-            label: "正面提示词",
-            value: promptSplit[0].trim(),
-            copyable: true,
-          });
-
-          if (promptSplit.length > 1) {
-            result.prompts.push({
-              label: "负面提示词",
-              value: promptSplit[1].trim(),
-              copyable: true,
-            });
-          }
-
-          // 解析参数
-          const params = paramsPart.match(/(\w+[\s\w]*): ([^,]+)/g);
-          if (params) {
-            params.forEach((param) => {
-              const [key, value] = param.split(": ");
-              result.technical.push({
-                label: key,
-                value: value,
-              });
-            });
-          }
-        }
-
-        return result;
-      }
-
-      // 渲染技术参数到左侧
-      function renderTechnicalParams(technicalData) {
-        const technicalPanel = document.getElementById("technicalPanel");
-        const technicalParams = document.getElementById("technicalParams");
-
-        if (technicalData && technicalData.length > 0) {
-          technicalParams.innerHTML = "";
-
-          technicalData.forEach((item) => {
-            const paramEl = document.createElement("div");
-            paramEl.className = "tech-param-item";
-            if (item.wide) {
-              paramEl.classList.add("wide");
-            }
-
-            const labelEl = document.createElement("div");
-            labelEl.className = "tech-param-label";
-            labelEl.textContent = item.label;
-
-            const valueEl = document.createElement("div");
-            valueEl.className = "tech-param-value";
-            valueEl.textContent = item.value.toString();
-
-            // 添加点击复制功能
-            paramEl.addEventListener("click", () => {
-              copyToClipboard(item.value.toString());
-            });
-
-            paramEl.appendChild(labelEl);
-            paramEl.appendChild(valueEl);
-            technicalParams.appendChild(paramEl);
-          });
-
-          technicalPanel.style.display = "block";
+        if (width <= availableWidth) {
+          bestLength = mid;
+          start = mid + 1;
         } else {
-          technicalPanel.style.display = "none";
+          end = mid - 1;
         }
       }
 
-      // 渲染信息到右侧（不包括技术参数）
-      function renderInfo(data) {
-        const container = document.getElementById("infoContainer");
-        container.innerHTML = "";
+      if (bestLength === 0) {
+        return "..." + endPart + extension;
+      }
 
-        // Prompts - 过滤掉不需要的字段
-        if (data.prompts && data.prompts.length > 0) {
-          const filteredPrompts = data.prompts.filter((item) => {
-            const label = item.label.toLowerCase();
-            return !label.includes("title") && !label.includes("description") && !label.includes("基础caption") && !label.includes("负面基础caption") && !label.includes("generation_time");
-          });
+      return nameWithoutExt.substring(0, bestLength) + "..." + endPart + extension;
+    }
 
-          if (filteredPrompts.length > 0) {
-            const section = createSection("Prompts", "✨", filteredPrompts);
-            container.appendChild(section);
+    // Prompt格式化函数
+    function formatPrompt(prompt) {
+      if (!prompt || typeof prompt !== "string") return prompt;
+
+      // 1. 去除转义字符
+      let formatted = prompt.replace(/\\([()])/g, "$1");
+
+      // 2. 去除多余的连续逗号
+      formatted = formatted.replace(/,{2,}/g, ",");
+
+      // 3. 标准化逗号后的空格：确保逗号后有且仅有一个空格
+      formatted = formatted.replace(/,\s*/g, ", ");
+
+      // 4. 去除开头和结尾的逗号和空格
+      formatted = formatted.replace(/^[\s,]+|[\s,]+$/g, "");
+
+      return formatted;
+    }
+
+    // NovelAI默认提示词
+    const NOVELAI_DEFAULT_POSITIVE_TAGS = ["very aesthetic", "location", "masterpiece", "no text", "feet", "rating:general"];
+
+    const NOVELAI_DEFAULT_NEGATIVE_TAGS = [
+      "blurry",
+      "lowres",
+      "upscaled",
+      "artistic error",
+      "film grain",
+      "scan artifacts",
+      "worst quality",
+      "bad quality",
+      "jpeg artifacts",
+      "very displeasing",
+      "chromatic aberration",
+      "halftone",
+      "multiple views",
+      "logo",
+      "too many watermarks",
+      "negative space",
+      "blank page",
+    ];
+
+    // 检查是否为默认tag
+    function isDefaultTag(tagContent, isNegativePrompt = false) {
+      const content = tagContent.toLowerCase().trim();
+      const defaultTags = isNegativePrompt ? NOVELAI_DEFAULT_NEGATIVE_TAGS : NOVELAI_DEFAULT_POSITIVE_TAGS;
+      return defaultTags.some((defaultTag) => content === defaultTag.toLowerCase() || content.includes(defaultTag.toLowerCase()));
+    }
+
+    // NovelAI权重解析器
+    function parsePromptWeights(prompt) {
+      const tokens = [];
+      let i = 0;
+      let currentWeight = 1.0;
+      const weightStack = [1.0]; // 用于处理嵌套权重
+
+      while (i < prompt.length) {
+        const char = prompt[i];
+
+        // 处理数字权重语法：数字::
+        if (char.match(/[-\d]/) && prompt.substring(i).match(/^[-\d.]+::/)) {
+          const match = prompt.substring(i).match(/^([-\d.]+)::/);
+          if (match) {
+            const weight = parseFloat(match[1]);
+            tokens.push({
+              type: "weight-marker",
+              content: match[0],
+              weight: weight,
+            });
+            currentWeight = weight;
+            weightStack.push(weight); // 推入新权重
+            i += match[0].length;
+            continue;
           }
         }
 
-        // EXIF信息
-        if (data.exif && data.exif.length > 0) {
-          const section = createSection("EXIF信息", "📷", data.exif);
+        // 处理权重结束标记：::
+        if (prompt.substring(i, i + 2) === "::") {
+          tokens.push({
+            type: "weight-marker",
+            content: "::",
+            weight: 1.0,
+          });
+          // 恢复到权重栈的上一层
+          if (weightStack.length > 1) {
+            weightStack.pop();
+            currentWeight = weightStack[weightStack.length - 1];
+          } else {
+            currentWeight = 1.0;
+          }
+          i += 2;
+          continue;
+        }
+
+        // 处理旧式权重：{ 和 [
+        if (char === "{") {
+          const newWeight = currentWeight * 1.1;
+          tokens.push({
+            type: "weight-marker",
+            content: "{",
+            weight: newWeight,
+          });
+          currentWeight = newWeight;
+          weightStack.push(newWeight);
+          i++;
+          continue;
+        }
+
+        if (char === "[") {
+          const newWeight = currentWeight / 1.1;
+          tokens.push({
+            type: "weight-marker",
+            content: "[",
+            weight: newWeight,
+          });
+          currentWeight = newWeight;
+          weightStack.push(newWeight);
+          i++;
+          continue;
+        }
+
+        if (char === "}" || char === "]") {
+          tokens.push({
+            type: "weight-marker",
+            content: char,
+            weight: 1.0,
+          });
+          if (weightStack.length > 1) {
+            weightStack.pop();
+            currentWeight = weightStack[weightStack.length - 1];
+          } else {
+            currentWeight = 1.0;
+          }
+          i++;
+          continue;
+        }
+
+        // 处理逗号
+        if (char === ",") {
+          tokens.push({
+            type: "comma",
+            content: char,
+            weight: 1.0,
+          });
+          i++;
+          // 跳过逗号后的空格
+          while (i < prompt.length && prompt[i] === " ") {
+            i++;
+          }
+          continue;
+        }
+
+        // 跳过其他空格
+        if (char === " ") {
+          i++;
+          continue;
+        }
+
+        // 处理普通文本
+        let textContent = "";
+        while (i < prompt.length) {
+          const currentChar = prompt[i];
+          const nextTwoChars = prompt.substring(i, i + 2);
+
+          // 检查是否遇到权重标记的开始
+          if (prompt.substring(i).match(/^[-\d.]+::/)) {
+            break;
+          }
+
+          // 检查是否遇到权重结束标记
+          if (nextTwoChars === "::") {
+            break;
+          }
+
+          // 检查是否遇到括号或逗号
+          if ("{[}],".includes(currentChar)) {
+            break;
+          }
+
+          textContent += currentChar;
+          i++;
+        }
+
+        if (textContent.trim()) {
+          tokens.push({
+            type: "text",
+            content: textContent.trim(),
+            weight: currentWeight,
+          });
+        }
+      }
+
+      return tokens;
+    }
+
+    // 渲染权重高亮的Prompt
+    function renderHighlightedPrompt(prompt, isNegativePrompt = false) {
+      const formatted = formatPrompt(prompt);
+      const tokens = parsePromptWeights(formatted);
+
+      let html = "";
+
+      tokens.forEach((token, index) => {
+        if (token.type === "weight-marker") {
+          html += `<span class="prompt-weight-marker">${escapeHtml(token.content)}</span>`;
+        } else if (token.type === "comma") {
+          // 在逗号后添加真实空格，给浏览器正确的换行位置
+          html += `<span class="prompt-comma">${escapeHtml(token.content)}</span> `;
+        } else if (token.type === "text" && token.content) {
+          let className = "prompt-tag weight-normal";
+
+          // 检查是否为默认tag
+          const isDefault = isDefaultTag(token.content, isNegativePrompt);
+
+          if (isDefault) {
+            className = "prompt-tag default-tag";
+          } else if (Math.abs(token.weight) > 1.0) {
+            className = "prompt-tag weight-high";
+          } else if (Math.abs(token.weight) < 1.0 && token.weight !== 0) {
+            className = "prompt-tag weight-low";
+          }
+
+          html += `<span class="${className}">${escapeHtml(token.content)}</span>`;
+
+          // 在文本token后添加空格，除非下一个token是逗号或权重标记
+          if (index < tokens.length - 1) {
+            const nextToken = tokens[index + 1];
+            if (nextToken.type !== "comma" && nextToken.type !== "weight-marker") {
+              html += " ";
+            }
+          }
+        }
+      });
+
+      return html;
+    }
+
+    // HTML转义函数
+    function escapeHtml(text) {
+      const div = document.createElement("div");
+      div.textContent = text;
+      return div.innerHTML;
+    }
+
+    // PNG Chunk 解析
+    function extractPngChunks(arrayBuffer) {
+      const dataView = new DataView(arrayBuffer);
+      const chunks = [];
+      let offset = 8; // Skip PNG signature
+
+      while (offset < arrayBuffer.byteLength - 12) {
+        const length = dataView.getUint32(offset, false);
+        const type = String.fromCharCode(
+          dataView.getUint8(offset + 4),
+          dataView.getUint8(offset + 5),
+          dataView.getUint8(offset + 6),
+          dataView.getUint8(offset + 7)
+        );
+
+        const data = new Uint8Array(arrayBuffer, offset + 8, length);
+        chunks.push({ type, data });
+
+        offset += length + 12; // length + type + data + crc
+      }
+
+      return chunks;
+    }
+
+    function decodePngTextChunk(data, chunkType) {
+      if (chunkType === "tEXt") {
+        const nullIndex = data.indexOf(0);
+        const keyword = new TextDecoder().decode(data.slice(0, nullIndex));
+        const text = new TextDecoder().decode(data.slice(nullIndex + 1));
+        return { keyword, text };
+      } else if (chunkType === "iTXt") {
+        // iTXt格式更复杂，包含压缩标志和语言标签
+        const filteredData = data.filter((x) => x != 0x0);
+        const header = new TextDecoder().decode(filteredData.slice(0, 11));
+        if (header === "Description") {
+          const txt = new TextDecoder().decode(filteredData.slice(11));
+          return { keyword: "Description", text: txt };
+        } else {
+          const txt = new TextDecoder().decode(filteredData);
+          return { keyword: "Comment", text: txt };
+        }
+      }
+      return { keyword: "Unknown", text: "" };
+    }
+
+    // 隐写术EXIF提取
+    async function getStealthExif(src) {
+      let time = performance.now();
+
+      let canvas = document.createElement('canvas');
+      let ctx = canvas.getContext('2d', { willReadFrequently: true, alpha: true });
+      let img = new Image();
+      img.src = src;
+
+      await img.decode();
+
+      canvas.width = img.width;
+      canvas.height = img.height;
+      ctx.drawImage(img, 0, 0);
+
+      let imageData = ctx.getImageData(0, 0, img.width, img.height);
+      let lowestData = [];
+
+      for (let x = 0; x < img.width; x++) {
+        for (let y = 0; y < img.height; y++) {
+          let index = (y * img.width + x) * 4;
+          let a = imageData.data[index + 3];
+          lowestData.push(a & 1);
+        }
+      }
+
+      console.log("隐写术提取耗时: ", performance.now() - time, "ms");
+
+      // 数据读取器类
+      class DataReader {
+        constructor(data) {
+          this.data = data;
+          this.index = 0;
+        }
+
+        readBit() {
+          return this.data[this.index++];
+        }
+
+        readNBits(n) {
+          let bits = [];
+          for (let i = 0; i < n; i++) {
+            bits.push(this.readBit());
+          }
+          return bits;
+        }
+
+        readByte() {
+          let byte = 0;
+          for (let i = 0; i < 8; i++) {
+            byte |= this.readBit() << (7 - i);
+          }
+          return byte;
+        }
+
+        readNBytes(n) {
+          let bytes = [];
+          for (let i = 0; i < n; i++) {
+            bytes.push(this.readByte());
+          }
+          return bytes;
+        }
+
+        readInt32() {
+          let bytes = this.readNBytes(4);
+          return new DataView(new Uint8Array(bytes).buffer).getInt32(0, false);
+        }
+      }
+
+      const magic = "stealth_pngcomp";
+      const reader = new DataReader(lowestData);
+      const readMagic = reader.readNBytes(magic.length);
+      const magicString = String.fromCharCode.apply(null, readMagic);
+
+      if (magic === magicString) {
+        console.log("找到隐写数据！");
+        const dataLength = reader.readInt32();
+        console.log("数据长度:", dataLength);
+        const gzipData = reader.readNBytes(dataLength / 8);
+
+        const data = pako.ungzip(new Uint8Array(gzipData));
+        const jsonString = new TextDecoder().decode(new Uint8Array(data));
+        const json = JSON.parse(jsonString);
+        return json;
+      } else {
+        console.log("未找到隐写数据标记");
+      }
+
+      return null;
+    }
+
+    // 解析NovelAI的JSON数据
+    function parseNovelAIData(details) {
+      const result = {
+        basic: [],
+        prompts: [],
+        technical: [],
+      };
+
+      // 主Prompt
+      if (details.prompt) {
+        result.prompts.push({
+          label: "主Prompt",
+          value: details.prompt,
+          copyable: true,
+        });
+      }
+
+      // 负面Prompt
+      if (details.uc) {
+        result.prompts.push({
+          label: "负面Prompt",
+          value: details.uc,
+          copyable: true,
+        });
+      }
+
+      // V4 角色Prompts - 按照角色顺序显示
+      const charPrompts = [];
+      const charNegativePrompts = [];
+
+      if (details.v4_prompt && details.v4_prompt.caption && details.v4_prompt.caption.char_captions) {
+        details.v4_prompt.caption.char_captions.forEach((char, index) => {
+          if (char.char_caption && char.char_caption.trim()) {
+            charPrompts[index] = {
+              label: `角色${index + 1} Prompt`,
+              value: char.char_caption,
+              copyable: true,
+            };
+          }
+        });
+      }
+
+      if (details.v4_negative_prompt && details.v4_negative_prompt.caption && details.v4_negative_prompt.caption.char_captions) {
+        details.v4_negative_prompt.caption.char_captions.forEach((char, index) => {
+          if (char.char_caption && char.char_caption.trim()) {
+            charNegativePrompts[index] = {
+              label: `角色${index + 1} 负面Prompt`,
+              value: char.char_caption,
+              copyable: true,
+            };
+          }
+        });
+      }
+
+      // 按照角色顺序添加Prompt和负面Prompt
+      const maxCharIndex = Math.max(charPrompts.length, charNegativePrompts.length);
+      for (let i = 0; i < maxCharIndex; i++) {
+        if (charPrompts[i]) {
+          result.prompts.push(charPrompts[i]);
+        }
+        if (charNegativePrompts[i]) {
+          result.prompts.push(charNegativePrompts[i]);
+        }
+      }
+
+      // 技术参数
+      result.technical.push({
+        label: "采样器",
+        value: details.sampler || "Unknown",
+      });
+      result.technical.push({
+        label: "步数",
+        value: details.steps || "Unknown",
+      });
+      result.technical.push({
+        label: "尺寸",
+        value: `${details.width || "?"} × ${details.height || "?"}`,
+      });
+      result.technical.push({
+        label: "CFG Scale",
+        value: details.scale || "Unknown",
+      });
+      result.technical.push({
+        label: "种子",
+        value: details.seed || "Unknown",
+      });
+      if (details.noise_schedule) {
+        result.technical.push({
+          label: "噪声计划",
+          value: details.noise_schedule,
+        });
+      }
+      if (details.cfg_rescale !== undefined) {
+        result.technical.push({
+          label: "CFG Rescale",
+          value: details.cfg_rescale,
+        });
+      }
+      if (details.strength !== undefined) {
+        result.technical.push({
+          label: "Strength",
+          value: details.strength,
+        });
+      }
+      if (details.noise !== undefined) {
+        result.technical.push({
+          label: "Noise",
+          value: details.noise,
+        });
+      }
+      if (details.generation_time !== undefined) {
+        result.technical.push({
+          label: "生成时间",
+          value: `${details.generation_time.toFixed(4)}s`,
+        });
+      }
+      if (details.request_type) {
+        result.technical.push({
+          label: "请求类型",
+          value: details.request_type,
+          wide: true,
+        });
+      }
+
+      return result;
+    }
+
+    // 处理WebUI格式
+    function parseWebUIData(text) {
+      const result = {
+        prompts: [],
+        technical: [],
+      };
+
+      const parts = text.split("Steps: ");
+      if (parts.length >= 2) {
+        const promptPart = parts[0];
+        const paramsPart = "Steps: " + parts[1];
+
+        const promptSplit = promptPart.split("Negative prompt: ");
+
+        result.prompts.push({
+          label: "正面提示词",
+          value: promptSplit[0].trim(),
+          copyable: true,
+        });
+
+        if (promptSplit.length > 1) {
+          result.prompts.push({
+            label: "负面提示词",
+            value: promptSplit[1].trim(),
+            copyable: true,
+          });
+        }
+
+        // 解析参数
+        const params = paramsPart.match(/(\w+[\s\w]*): ([^,]+)/g);
+        if (params) {
+          params.forEach((param) => {
+            const [key, value] = param.split(": ");
+            result.technical.push({
+              label: key,
+              value: value,
+            });
+          });
+        }
+      }
+
+      return result;
+    }
+
+    // 渲染技术参数到左侧
+    function renderTechnicalParams(technicalData) {
+      const technicalPanel = document.getElementById("technicalPanel");
+      const technicalParams = document.getElementById("technicalParams");
+
+      if (technicalData && technicalData.length > 0) {
+        technicalParams.innerHTML = "";
+
+        technicalData.forEach((item) => {
+          const paramEl = document.createElement("div");
+          paramEl.className = "tech-param-item";
+          if (item.wide) {
+            paramEl.classList.add("wide");
+          }
+
+          const labelEl = document.createElement("div");
+          labelEl.className = "tech-param-label";
+          labelEl.textContent = item.label;
+
+          const valueEl = document.createElement("div");
+          valueEl.className = "tech-param-value";
+          valueEl.textContent = item.value.toString();
+
+          // 添加点击复制功能
+          paramEl.addEventListener("click", () => {
+            copyToClipboard(item.value.toString());
+          });
+
+          paramEl.appendChild(labelEl);
+          paramEl.appendChild(valueEl);
+          technicalParams.appendChild(paramEl);
+        });
+
+        technicalPanel.style.display = "block";
+      } else {
+        technicalPanel.style.display = "none";
+      }
+    }
+
+    // 渲染信息到右侧（不包括技术参数）
+    function renderInfo(data) {
+      const container = document.getElementById("infoContainer");
+      container.innerHTML = "";
+
+      // Prompts - 过滤掉不需要的字段
+      if (data.prompts && data.prompts.length > 0) {
+        const filteredPrompts = data.prompts.filter((item) => {
+          if (!item || (!item.label && !item.key)) {
+            return false; // 过滤掉无效的项目
+          }
+          const label = (item.label || item.key).toLowerCase();
+          return !label.includes("title") && !label.includes("description") && !label.includes("基础caption") && !label.includes("负面基础caption") && !label.includes("generation_time");
+        });
+
+        if (filteredPrompts.length > 0) {
+          const section = createSection("Prompts", "✨", filteredPrompts);
           container.appendChild(section);
         }
       }
 
-      function createSection(title, icon, items) {
-        const section = document.createElement("div");
-        section.className = "info-section";
-
-        const titleEl = document.createElement("h2");
-        titleEl.className = "section-title";
-        titleEl.innerHTML = `<span class="section-icon">${icon}</span>${title}`;
-        section.appendChild(titleEl);
-
-        items.forEach((item, index) => {
-          const itemEl = document.createElement("div");
-          itemEl.className = "info-item";
-          itemEl.style.animationDelay = `${index * 0.1}s`;
-
-          const labelEl = document.createElement("div");
-          labelEl.className = "info-label";
-
-          const labelText = document.createElement("span");
-          labelText.textContent = item.label;
-          labelEl.appendChild(labelText);
-
-          // 检查是否为prompt相关内容
-          const isPrompt = item.label.toLowerCase().includes("prompt") || item.label.toLowerCase().includes("caption") || item.label.toLowerCase() === "description";
-
-          if (item.copyable) {
-            const copyBtn = document.createElement("button");
-            copyBtn.className = "copy-btn";
-            copyBtn.textContent = "复制";
-
-            // 对于prompt类型，复制格式化后的文本；对于其他类型，复制原始文本
-            if (isPrompt && item.value && typeof item.value === "string") {
-              const formattedText = formatPrompt(item.value);
-              copyBtn.onclick = () => copyToClipboard(formattedText);
-            } else {
-              copyBtn.onclick = () => copyToClipboard(item.value);
-            }
-
-            labelEl.appendChild(copyBtn);
-          }
-
-          itemEl.appendChild(labelEl);
-
-          const valueEl = document.createElement("div");
-          valueEl.className = "info-value";
-
-          if (isPrompt && item.value && typeof item.value === "string") {
-            // 判断是否为负面prompt
-            const isNegativePrompt = item.label.toLowerCase().includes("负面") || item.label.toLowerCase().includes("negative");
-
-            // 对prompt内容进行格式化和高亮
-            valueEl.classList.add("formatted-prompt");
-            valueEl.innerHTML = renderHighlightedPrompt(item.value, isNegativePrompt);
-          } else {
-            // 普通文本内容
-            valueEl.textContent = item.value;
-          }
-
-          itemEl.appendChild(valueEl);
-
-          section.appendChild(itemEl);
-        });
-
-        return section;
+      // EXIF信息
+      if (data.exif && data.exif.length > 0) {
+        const section = createSection("EXIF信息", "📷", data.exif);
+        container.appendChild(section);
       }
+    }
 
-      // 显示图片预览和基本信息
-      function showImagePreview(file, modelInfo = null) {
-        const uploadArea = document.getElementById("uploadArea");
-        const uploadContent = document.getElementById("uploadContent");
-        const previewImage = document.getElementById("previewImage");
-        const imageInfo = document.getElementById("imageInfo");
-        const imageFilename = document.getElementById("imageFilename");
-        const imageDetails = document.getElementById("imageDetails");
+    function createSection(title, icon, items) {
+      const section = document.createElement("div");
+      section.className = "info-section";
 
-        // 读取图片并显示预览
-        const reader = new FileReader();
-        reader.onload = (e) => {
-          previewImage.src = e.target.result;
-          previewImage.style.display = "block";
+      const titleEl = document.createElement("h2");
+      titleEl.className = "section-title";
+      titleEl.innerHTML = `<span class="section-icon">${icon}</span>${title}`;
+      section.appendChild(titleEl);
 
-          // 隐藏上传提示，显示图片信息
-          uploadContent.style.display = "none";
-          uploadArea.classList.add("has-image");
+      items.forEach((item, index) => {
+        // 跳过无效的项目
+        if (!item || (!item.label && !item.key) || item.value === undefined || item.value === null) {
+          console.warn("跳过无效项目:", item);
+          return;
+        }
 
-          // 显示文件信息
-          // 计算可用宽度，大约是容器宽度减去padding
-          const maxWidth = 250; // 估算的最大宽度
-          const displayFilename = truncateFilename(file.name, maxWidth);
-          imageFilename.textContent = displayFilename;
-          imageFilename.title = file.name; // 鼠标悬停显示完整文件名
+        const itemEl = document.createElement("div");
+        itemEl.className = "info-item";
+        itemEl.style.animationDelay = `${index * 0.1}s`;
 
-          // 添加点击复制完整文件名功能
-          imageFilename.onclick = () => {
-            copyToClipboard(file.name);
-          };
+        const labelEl = document.createElement("div");
+        labelEl.className = "info-label";
 
-          // 构建详细信息，如果有模型信息就显示模型，否则显示文件类型
-          const detailsHtml = `
+        const labelText = document.createElement("span");
+        const itemLabel = item.label || item.key || "未知字段";
+        labelText.textContent = itemLabel;
+        labelEl.appendChild(labelText);
+
+        // 检查是否为prompt相关内容
+        const labelToCheck = itemLabel.toLowerCase();
+        const isPrompt = labelToCheck.includes("prompt") || labelToCheck.includes("caption") || labelToCheck === "description";
+
+        if (item.copyable) {
+          const copyBtn = document.createElement("button");
+          copyBtn.className = "copy-btn";
+          copyBtn.textContent = "复制";
+
+          // 对于prompt类型，复制格式化后的文本；对于其他类型，复制原始文本
+          if (isPrompt && item.value && typeof item.value === "string") {
+            const formattedText = formatPrompt(item.value);
+            copyBtn.onclick = () => copyToClipboard(formattedText);
+          } else {
+            copyBtn.onclick = () => copyToClipboard(item.value);
+          }
+
+          labelEl.appendChild(copyBtn);
+        }
+
+        itemEl.appendChild(labelEl);
+
+        const valueEl = document.createElement("div");
+        valueEl.className = "info-value";
+
+        if (isPrompt && item.value && typeof item.value === "string") {
+          // 判断是否为负面prompt
+          const isNegativePrompt = labelToCheck.includes("负面") || labelToCheck.includes("negative");
+
+          // 对prompt内容进行格式化和高亮
+          valueEl.classList.add("formatted-prompt");
+          valueEl.innerHTML = renderHighlightedPrompt(item.value, isNegativePrompt);
+        } else {
+          // 普通文本内容
+          valueEl.textContent = item.value;
+        }
+
+        itemEl.appendChild(valueEl);
+
+        section.appendChild(itemEl);
+      });
+
+      return section;
+    }
+
+    // 显示图片预览和基本信息
+    function showImagePreview(file, modelInfo = null) {
+      const uploadArea = document.getElementById("uploadArea");
+      const uploadContent = document.getElementById("uploadContent");
+      const previewImage = document.getElementById("previewImage");
+      const imageInfo = document.getElementById("imageInfo");
+      const imageFilename = document.getElementById("imageFilename");
+      const imageDetails = document.getElementById("imageDetails");
+
+      // 读取图片并显示预览
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        previewImage.src = e.target.result;
+        previewImage.style.display = "block";
+
+        // 隐藏上传提示，显示图片信息
+        uploadContent.style.display = "none";
+        uploadArea.classList.add("has-image");
+
+        // 显示文件信息
+        // 计算可用宽度，大约是容器宽度减去padding
+        const maxWidth = 250; // 估算的最大宽度
+        const displayFilename = truncateFilename(file.name, maxWidth);
+        imageFilename.textContent = displayFilename;
+        imageFilename.title = file.name; // 鼠标悬停显示完整文件名
+
+        // 添加点击复制完整文件名功能
+        imageFilename.onclick = () => {
+          copyToClipboard(file.name);
+        };
+
+        // 构建详细信息，如果有模型信息就显示模型，否则显示文件类型
+        const detailsHtml = `
                     <span class="detail-item">
                         <span class="detail-label">大小:</span>
                         <span class="detail-value">${formatFileSize(file.size)}</span>
@@ -1279,19 +1375,19 @@
                         <span class="detail-value">${modelInfo || file.type}</span>
                     </span>
                 `;
-          imageDetails.innerHTML = detailsHtml;
-          imageInfo.style.display = "block";
-        };
-        reader.readAsDataURL(file);
-      }
+        imageDetails.innerHTML = detailsHtml;
+        imageInfo.style.display = "block";
+      };
+      reader.readAsDataURL(file);
+    }
 
-      // 更新图片信息中的模型显示
-      function updateImageModelInfo(modelInfo) {
-        const imageDetails = document.getElementById("imageDetails");
-        const file = window.currentFile; // 需要保存当前文件引用
+    // 更新图片信息中的模型显示
+    function updateImageModelInfo(modelInfo) {
+      const imageDetails = document.getElementById("imageDetails");
+      const file = window.currentFile; // 需要保存当前文件引用
 
-        if (imageDetails && modelInfo && file) {
-          const detailsHtml = `
+      if (imageDetails && modelInfo && file) {
+        const detailsHtml = `
                     <span class="detail-item">
                         <span class="detail-label">大小:</span>
                         <span class="detail-value">${formatFileSize(file.size)}</span>
@@ -1301,246 +1397,307 @@
                         <span class="detail-value">${modelInfo}</span>
                     </span>
                 `;
-          imageDetails.innerHTML = detailsHtml;
-        }
+        imageDetails.innerHTML = detailsHtml;
       }
+    }
 
-      // 处理图片
-      async function processImage(file) {
-        const rightPanel = document.getElementById("rightPanel");
+    // 提取元数据
+    async function extractMetadata(file) {
+      if (file.type === "image/png") {
+        const buf = await file.arrayBuffer();
+        let chunks = [];
+        try {
+          chunks = extractPngChunks(buf);
+        } catch (err) {
+          console.error("PNG chunk 解析失败:", err);
+          return [];
+        }
 
-        // 保存当前文件引用用于后续更新
-        window.currentFile = file;
+        const textChunks = chunks
+          .filter(function (chunk) {
+            return chunk.type === "tEXt" || chunk.type === "iTXt";
+          })
+          .map(function (chunk) {
+            return decodePngTextChunk(chunk.data, chunk.type);
+          })
+          .filter(chunk => chunk.keyword !== "Unknown");
 
-        // 显示图片预览
-        showImagePreview(file);
+        console.log("提取的文本块:", textChunks);
+        return textChunks;
+      }
+      return [];
+    }
 
-        // 读取元数据
-        const arrayBuffer = await file.arrayBuffer();
+    // 处理WebUI格式数据
+    function handleWebUiTag(data) {
+      let [prompts, otherParas] = data.text.split("Steps: ");
+      let promptSplit = prompts.split("Negative prompt: ");
+      let negativePrompt = promptSplit.length > 1 ? promptSplit[1] : "无";
+      return [
+        {
+          label: "提示词",
+          value: promptSplit[0],
+          copyable: true,
+        },
+        {
+          label: "负面提示词",
+          value: negativePrompt,
+          copyable: true,
+        },
+        {
+          label: "其他参数",
+          value: "Steps: " + otherParas,
+          copyable: true,
+        },
+      ];
+    }
+
+    // 处理图片
+    async function processImage(file) {
+      const rightPanel = document.getElementById("rightPanel");
+
+      // 保存当前文件引用用于后续更新
+      window.currentFile = file;
+
+      // 显示图片预览
+      showImagePreview(file);
+
+      // 读取图片作为DataURL用于隐写术提取
+      const reader = new FileReader();
+      reader.onload = async (e) => {
+        const imageSrc = e.target.result;
+
+        // 提取元数据
+        let metaType = "SD-WEBUI";
+        let parsed = [];
+        let metadata = await extractMetadata(file);
+        let stealthExifData = null;
+
+        console.log("提取的元数据:", metadata);
+
+        // 初始化数据容器
+        let promptsData = [];
+        let basicInfoExtra = [];
+
+        if (metadata.length == 0) {
+          console.log("尝试隐写术提取...");
+          let exif = await getStealthExif(imageSrc);
+          if (exif) {
+            console.log("隐写术提取成功:", exif);
+            stealthExifData = exif;  // 保存到外层作用域
+
+            // 处理隐写术数据
+            for (const [key, value] of Object.entries(exif)) {
+              if (key === "Comment") {
+                // Comment包含完整的JSON数据，需要解析
+                try {
+                  const jsonData = JSON.parse(value);
+                  console.log("隐写术Comment JSON data:", jsonData);
+                  const novelAIData = parseNovelAIData(jsonData);
+                  promptsData = [...promptsData, ...novelAIData.prompts];
+
+                  // 设置技术参数
+                  renderTechnicalParams(novelAIData.technical);
+                } catch (e) {
+                  console.error("解析隐写术Comment JSON失败:", e);
+                  promptsData.push({
+                    label: "Comment",
+                    value: value,
+                    copyable: true,
+                  });
+                }
+              } else if (key === "Description") {
+                // Description通常是主prompt
+                promptsData.push({
+                  label: "主Prompt (Description)",
+                  value: value,
+                  copyable: true,
+                });
+              }
+              // Source、Software、Generation time 等会在后面的 basicInfoExtra 中处理
+            }
+
+            metaType = "NOVELAI";
+
+            // 更新图片显示中的模型信息
+            if (exif.Source) {
+              updateImageModelInfo(exif.Source);
+            }
+          } else {
+            promptsData.push({
+              label: "提示",
+              value: "😭 无法读取到图像 Metadata，这可能不是一张 Stable Diffusion 生成的图。或者不是原图, 经过了压缩。",
+              copyable: false,
+            });
+          }
+        } else if (metadata.length == 1 && metadata[0].keyword === "parameters") {
+          // SD WebUI 格式
+          const webUIData = handleWebUiTag(metadata[0]);
+          promptsData = webUIData;
+          renderTechnicalParams([]);
+        } else {
+          // 处理PNG文本块中的NovelAI Comment格式
+          for (const meta of metadata) {
+            if (meta.keyword === "Comment") {
+              try {
+                const jsonData = JSON.parse(meta.text);
+                console.log("PNG文本块 NovelAI JSON data:", jsonData);
+                const novelAIData = parseNovelAIData(jsonData);
+                promptsData = [...promptsData, ...novelAIData.prompts];
+
+                // 设置技术参数
+                renderTechnicalParams(novelAIData.technical);
+                metaType = "NOVELAI";
+              } catch (e) {
+                console.error("解析PNG文本块Comment JSON失败:", e);
+                promptsData.push({
+                  label: meta.keyword,
+                  value: meta.text,
+                  copyable: true,
+                });
+              }
+            } else if (meta.keyword === "Source") {
+              // 模型信息会在basicInfoExtra中处理
+              if (meta.text) {
+                updateImageModelInfo(meta.text);
+              }
+            } else if (meta.keyword === "Description") {
+              promptsData.push({
+                label: "主Prompt (Description)",
+                value: meta.text,
+                copyable: true,
+              });
+            } else if (meta.keyword !== "Software" && meta.keyword !== "Generation time") {
+              // 其他非基础信息的字段作为prompt处理
+              promptsData.push({
+                label: meta.keyword,
+                value: meta.text,
+                copyable: true,
+              });
+            }
+          }
+        }
+
+        // 转换为统一格式
+        parsed = promptsData;
+
+        // 构建基础信息
+        let basicInfo = [
+          { label: "文件名", value: file.name },
+          { label: "文件大小", value: formatFileSize(file.size) },
+        ];
+
+        // 如果有模型信息，添加到基础信息中
+        if (metaType === "NOVELAI" && stealthExifData) {
+          if (stealthExifData.Software) {
+            basicInfo.push({ label: "软件", value: stealthExifData.Software });
+          }
+          if (stealthExifData.Source) {
+            basicInfo.push({ label: "模型", value: stealthExifData.Source });
+          }
+          if (stealthExifData["Generation time"]) {
+            basicInfo.push({ label: "生成时间", value: stealthExifData["Generation time"] + "s" });
+          }
+        }
         let allData = {
-          basic: [
-            {
-              label: "文件名",
-              value: file.name,
-            },
-            {
-              label: "文件大小",
-              value: formatFileSize(file.size),
-            },
-          ],
-          prompts: [],
+          basic: basicInfo,
+          prompts: parsed, // parsed 现在已经是正确的格式了
           technical: [],
           exif: [],
         };
 
-        let modelInfo = null;
-
-        // 尝试读取PNG chunks
-        if (file.type === "image/png") {
-          try {
-            const chunks = extractPngChunks(arrayBuffer);
-            const textChunks = chunks.filter((chunk) => chunk.type === "tEXt" || chunk.type === "iTXt");
-
-            for (const chunk of textChunks) {
-              const decoded = decodePngTextChunk(chunk.data, chunk.type);
-
-              if (decoded.keyword === "parameters") {
-                // WebUI格式
-                const webUIData = parseWebUIData(decoded.text);
-                allData.prompts = [...allData.prompts, ...webUIData.prompts];
-                allData.technical = [...allData.technical, ...webUIData.technical];
-              } else if (decoded.keyword === "Comment") {
-                // 可能是NovelAI格式
-                try {
-                  const jsonData = JSON.parse(decoded.text);
-                  console.log("NovelAI JSON data:", jsonData);
-                  const novelAIData = parseNovelAIData(jsonData);
-                  allData.prompts = [...allData.prompts, ...novelAIData.prompts];
-                  allData.technical = [...allData.technical, ...novelAIData.technical];
-                } catch (e) {
-                  // 不是JSON，作为普通文本处理
-                  allData.prompts.push({
-                    label: decoded.keyword,
-                    value: decoded.text,
-                    copyable: true,
-                  });
-                }
-              } else if (decoded.keyword === "Software") {
-                // NovelAI软件信息
-                allData.basic.push({
-                  label: "软件",
-                  value: decoded.text,
-                });
-              } else if (decoded.keyword === "Source") {
-                // 模型信息
-                modelInfo = decoded.text;
-                allData.basic.push({
-                  label: "模型",
-                  value: decoded.text,
-                });
-              } else {
-                allData.prompts.push({
-                  label: decoded.keyword,
-                  value: decoded.text,
-                  copyable: true,
-                });
-              }
-            }
-          } catch (e) {
-            console.error("解析PNG失败:", e);
-          }
+        if (metaType == "SD-WEBUI" && metadata.length > 0) {
+          allData.prompts.push({
+            key: "完整生成信息",
+            value: metadata[0]["text"],
+            copyable: true,
+          });
         }
 
-        // 读取EXIF
-        EXIF.getData(file, function () {
-          const allTags = EXIF.getAllTags(this);
+        // 如果没有找到prompt相关信息且只是技术参数，也要渲染空的技术参数
+        if (metaType !== "NOVELAI") {
+          renderTechnicalParams([]);
+        }
 
-          // 检查是否是NovelAI图片
-          let isNovelAI = false;
-          let novelAIExifData = {};
+        // 渲染其他信息到右侧
+        renderInfo(allData);
+        rightPanel.style.display = "block";
+      };
 
-          for (const tag in allTags) {
-            const value = allTags[tag];
+      reader.readAsDataURL(file);
+    }
 
-            // 特殊处理NovelAI的EXIF字段
-            if (tag === "Software" && value.toString().includes("NovelAI")) {
-              isNovelAI = true;
-              allData.basic.splice(1, 0, {
-                label: "软件",
-                value: value.toString(),
-              });
-            } else if (tag === "Model" || tag === "EquipModel") {
-              modelInfo = value.toString();
-              allData.basic.splice(2, 0, {
-                label: "模型",
-                value: value.toString(),
-              });
-            } else if (tag === "UserComment") {
-              // UserComment可能包含JSON数据
-              try {
-                const text = value.toString();
-                // 去除可能的Unicode字符
-                const cleanText = text.replace(/[\x00-\x1F\x7F-\x9F]/g, "").trim();
-                if (cleanText.startsWith("{")) {
-                  const jsonData = JSON.parse(cleanText);
-                  console.log("EXIF UserComment JSON:", jsonData);
-                  const novelAIData = parseNovelAIData(jsonData);
-                  // 如果还没有这些数据，添加它们
-                  if (allData.prompts.length === 0) {
-                    allData.prompts = [...novelAIData.prompts];
-                    allData.technical = [...novelAIData.technical];
-                  }
-                }
-              } catch (e) {
-                // 不是JSON，添加为普通EXIF
-                if (tag !== "thumbnail") {
-                  allData.exif.push({
-                    label: tag,
-                    value: value.toString(),
-                  });
-                }
-              }
-            } else if (tag !== "thumbnail" && tag !== "undefined") {
-              // 其他EXIF信息
-              allData.exif.push({
-                label: tag,
-                value: value.toString(),
-              });
-            }
-          }
+    // 初始化上传功能
+    document.addEventListener("DOMContentLoaded", () => {
+      const uploadArea = document.getElementById("uploadArea");
+      const fileInput = document.getElementById("fileInput");
+      const uploadContent = document.getElementById("uploadContent");
+      const previewImage = document.getElementById("previewImage");
+      const imageInfo = document.getElementById("imageInfo");
+      const technicalPanel = document.getElementById("technicalPanel");
+      const rightPanel = document.getElementById("rightPanel");
 
-          // 如果找到了模型信息，更新图片显示中的模型信息
-          if (modelInfo) {
-            updateImageModelInfo(modelInfo);
-          }
+      // 重置界面的函数
+      function resetInterface() {
+        uploadArea.classList.remove("has-image");
+        uploadContent.style.display = "flex";
+        previewImage.style.display = "none";
+        imageInfo.style.display = "none";
+        technicalPanel.style.display = "none";
+        rightPanel.style.display = "none";
+        window.currentFile = null;
 
-          // 如果没有找到任何元数据
-          if (allData.prompts.length === 0 && allData.technical.length === 0) {
-            allData.prompts.push({
-              label: "提示",
-              value: "未找到AI生成参数。这可能不是AI生成的图片，或者元数据已被删除。",
-            });
-          }
-
-          // 渲染技术参数到左侧
-          renderTechnicalParams(allData.technical);
-
-          // 渲染其他信息到右侧
-          renderInfo(allData);
-          rightPanel.style.display = "block";
-        });
+        // 清除文件名的点击事件
+        const imageFilename = document.getElementById("imageFilename");
+        if (imageFilename) {
+          imageFilename.onclick = null;
+          imageFilename.title = "";
+        }
       }
 
-      // 初始化上传功能
-      document.addEventListener("DOMContentLoaded", () => {
-        const uploadArea = document.getElementById("uploadArea");
-        const fileInput = document.getElementById("fileInput");
-        const uploadContent = document.getElementById("uploadContent");
-        const previewImage = document.getElementById("previewImage");
-        const imageInfo = document.getElementById("imageInfo");
-        const technicalPanel = document.getElementById("technicalPanel");
-        const rightPanel = document.getElementById("rightPanel");
-
-        // 重置界面的函数
-        function resetInterface() {
-          uploadArea.classList.remove("has-image");
-          uploadContent.style.display = "flex";
-          previewImage.style.display = "none";
-          imageInfo.style.display = "none";
-          technicalPanel.style.display = "none";
-          rightPanel.style.display = "none";
-          window.currentFile = null;
-
-          // 清除文件名的点击事件
-          const imageFilename = document.getElementById("imageFilename");
-          if (imageFilename) {
-            imageFilename.onclick = null;
-            imageFilename.title = "";
-          }
-        }
-
-        uploadArea.addEventListener("click", (e) => {
-          // 如果点击的是图片，询问是否要选择新图片
-          if (e.target.tagName === "IMG" && e.target.id === "previewImage") {
-            if (confirm("要选择新的图片吗？")) {
-              resetInterface();
-              fileInput.click();
-            }
-          } else if (!uploadArea.classList.contains("has-image")) {
-            // 如果还没有图片，直接打开选择
+      uploadArea.addEventListener("click", (e) => {
+        // 如果点击的是图片，询问是否要选择新图片
+        if (e.target.tagName === "IMG" && e.target.id === "previewImage") {
+          if (confirm("要选择新的图片吗？")) {
+            resetInterface();
             fileInput.click();
           }
-        });
-
-        fileInput.addEventListener("change", (e) => {
-          const file = e.target.files[0];
-          if (file && file.type.startsWith("image/")) {
-            processImage(file);
-          }
-          // 清空input，允许重复选择同一文件
-          fileInput.value = "";
-        });
-
-        // 拖拽功能
-        uploadArea.addEventListener("dragover", (e) => {
-          e.preventDefault();
-          uploadArea.classList.add("drag-over");
-        });
-
-        uploadArea.addEventListener("dragleave", () => {
-          uploadArea.classList.remove("drag-over");
-        });
-
-        uploadArea.addEventListener("drop", (e) => {
-          e.preventDefault();
-          uploadArea.classList.remove("drag-over");
-
-          const file = e.dataTransfer.files[0];
-          if (file && file.type.startsWith("image/")) {
-            processImage(file);
-          }
-        });
+        } else if (!uploadArea.classList.contains("has-image")) {
+          // 如果还没有图片，直接打开选择
+          fileInput.click();
+        }
       });
-    </script>
-  </body>
+
+      fileInput.addEventListener("change", (e) => {
+        const file = e.target.files[0];
+        if (file && file.type.startsWith("image/")) {
+          processImage(file);
+        }
+        // 清空input，允许重复选择同一文件
+        fileInput.value = "";
+      });
+
+      // 拖拽功能
+      uploadArea.addEventListener("dragover", (e) => {
+        e.preventDefault();
+        uploadArea.classList.add("drag-over");
+      });
+
+      uploadArea.addEventListener("dragleave", () => {
+        uploadArea.classList.remove("drag-over");
+      });
+
+      uploadArea.addEventListener("drop", (e) => {
+        e.preventDefault();
+        uploadArea.classList.remove("drag-over");
+
+        const file = e.dataTransfer.files[0];
+        if (file && file.type.startsWith("image/")) {
+          processImage(file);
+        }
+      });
+    });
+  </script>
+</body>
+
 </html>
