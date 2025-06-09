@@ -562,14 +562,56 @@
   <!-- 引入必要的库 -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pako/2.1.0/pako.min.js"></script>
   <script>
-    // 工具函数
+    // =============================================================================
+    // 工具函数模块
+    // =============================================================================
+    
+    // DOM工具函数
+    const DOMUtils = {
+      getElementById(id) {
+        const element = document.getElementById(id);
+        if (!element) {
+          console.warn(`Element with id '${id}' not found`);
+        }
+        return element;
+      },
+
+      toggleElementDisplay(elementId, show) {
+        const element = this.getElementById(elementId);
+        if (element) {
+          element.style.display = show ? "block" : "none";
+        }
+      },
+
+      setElementContent(elementId, content) {
+        const element = this.getElementById(elementId);
+        if (element) {
+          element.innerHTML = content;
+        }
+      }
+    };
+
+    // 错误处理工具
+    const ErrorHandler = {
+      logError(message, error) {
+        console.error(message, error);
+      },
+
+      handleProcessingError(error, context = "未知操作") {
+        this.logError(`${context}时出错:`, error);
+        showToast(`${context}时出错，请重试`);
+      }
+    };
+
     function showToast(message) {
-      const toast = document.getElementById("toast");
-      toast.textContent = message;
-      toast.classList.add("show");
-      setTimeout(() => {
-        toast.classList.remove("show");
-      }, 3000);
+      const toast = DOMUtils.getElementById("toast");
+      if (toast) {
+        toast.textContent = message;
+        toast.classList.add("show");
+        setTimeout(() => {
+          toast.classList.remove("show");
+        }, 3000);
+      }
     }
 
     function copyToClipboard(text) {
@@ -589,6 +631,16 @@
       else return (bytes / 1048576).toFixed(2) + " MB";
     }
 
+    function escapeHtml(text) {
+      const div = document.createElement("div");
+      div.textContent = text;
+      return div.innerHTML;
+    }
+
+    // =============================================================================
+    // 文件处理模块
+    // =============================================================================
+    
     // 处理文件名显示 - 中间省略，保留扩展名
     function truncateFilename(filename, maxWidth) {
       const canvas = document.createElement("canvas");
@@ -642,52 +694,66 @@
       return nameWithoutExt.substring(0, bestLength) + "..." + endPart + extension;
     }
 
+    // =============================================================================
+    // 配置和常量模块
+    // =============================================================================
+    
+    const CONFIG = {
+      // 界面配置
+      UI: {
+        FILENAME_MAX_WIDTH: 250,
+        TOAST_DURATION: 3000,
+        ANIMATION_DELAY_STEP: 0.1
+      },
+
+      // NovelAI配置
+      NOVELAI: {
+        DEFAULT_POSITIVE_TAGS: ["very aesthetic", "location", "masterpiece", "no text", "feet", "rating:general"],
+        DEFAULT_NEGATIVE_TAGS: [
+          "blurry", "lowres", "upscaled", "artistic error", "film grain", "scan artifacts",
+          "worst quality", "bad quality", "jpeg artifacts", "very displeasing", 
+          "chromatic aberration", "halftone", "multiple views", "logo", 
+          "too many watermarks", "negative space", "blank page",
+        ],
+        WEIGHT_MULTIPLIER: 1.1,
+        STEGANOGRAPHY_MAGIC: "stealth_pngcomp"
+      },
+
+      // 支持的文件类型
+      SUPPORTED_FILE_TYPES: ["image/png", "image/jpeg", "image/jpg"],
+      
+      // 元数据类型
+      METADATA_TYPES: {
+        SD_WEBUI: "SD-WEBUI",
+        NOVELAI: "NOVELAI", 
+        UNKNOWN: "UNKNOWN"
+      }
+    };
+
+    // =============================================================================
+    // Prompt处理模块
+    // =============================================================================
+
     // Prompt格式化函数
     function formatPrompt(prompt) {
       if (!prompt || typeof prompt !== "string") return prompt;
 
       // 1. 去除转义字符
       let formatted = prompt.replace(/\\([()])/g, "$1");
-
       // 2. 去除多余的连续逗号
       formatted = formatted.replace(/,{2,}/g, ",");
-
       // 3. 标准化逗号后的空格：确保逗号后有且仅有一个空格
       formatted = formatted.replace(/,\s*/g, ", ");
-
       // 4. 去除开头和结尾的逗号和空格
       formatted = formatted.replace(/^[\s,]+|[\s,]+$/g, "");
 
       return formatted;
     }
 
-    // NovelAI默认提示词
-    const NOVELAI_DEFAULT_POSITIVE_TAGS = ["very aesthetic", "location", "masterpiece", "no text", "feet", "rating:general"];
-
-    const NOVELAI_DEFAULT_NEGATIVE_TAGS = [
-      "blurry",
-      "lowres",
-      "upscaled",
-      "artistic error",
-      "film grain",
-      "scan artifacts",
-      "worst quality",
-      "bad quality",
-      "jpeg artifacts",
-      "very displeasing",
-      "chromatic aberration",
-      "halftone",
-      "multiple views",
-      "logo",
-      "too many watermarks",
-      "negative space",
-      "blank page",
-    ];
-
     // 检查是否为默认tag
     function isDefaultTag(tagContent, isNegativePrompt = false) {
       const content = tagContent.toLowerCase().trim();
-      const defaultTags = isNegativePrompt ? NOVELAI_DEFAULT_NEGATIVE_TAGS : NOVELAI_DEFAULT_POSITIVE_TAGS;
+      const defaultTags = isNegativePrompt ? CONFIG.NOVELAI.DEFAULT_NEGATIVE_TAGS : CONFIG.NOVELAI.DEFAULT_POSITIVE_TAGS;
       return defaultTags.some((defaultTag) => content === defaultTag.toLowerCase() || content.includes(defaultTag.toLowerCase()));
     }
 
@@ -738,7 +804,7 @@
 
         // 处理旧式权重：{ 和 [
         if (char === "{") {
-          const newWeight = currentWeight * 1.1;
+          const newWeight = currentWeight * CONFIG.NOVELAI.WEIGHT_MULTIPLIER;
           tokens.push({
             type: "weight-marker",
             content: "{",
@@ -751,7 +817,7 @@
         }
 
         if (char === "[") {
-          const newWeight = currentWeight / 1.1;
+          const newWeight = currentWeight / CONFIG.NOVELAI.WEIGHT_MULTIPLIER;
           tokens.push({
             type: "weight-marker",
             content: "[",
@@ -879,13 +945,10 @@
       return html;
     }
 
-    // HTML转义函数
-    function escapeHtml(text) {
-      const div = document.createElement("div");
-      div.textContent = text;
-      return div.innerHTML;
-    }
-
+    // =============================================================================
+    // 图片元数据解析模块
+    // =============================================================================
+    
     // PNG Chunk 解析
     function extractPngChunks(arrayBuffer) {
       const dataView = new DataView(arrayBuffer);
@@ -931,6 +994,37 @@
       return { keyword: "Unknown", text: "" };
     }
 
+    // 提取元数据
+    async function extractMetadata(file) {
+      if (file.type === "image/png") {
+        const buf = await file.arrayBuffer();
+        let chunks = [];
+        try {
+          chunks = extractPngChunks(buf);
+        } catch (err) {
+          console.error("PNG chunk 解析失败:", err);
+          return [];
+        }
+
+        const textChunks = chunks
+          .filter(function (chunk) {
+            return chunk.type === "tEXt" || chunk.type === "iTXt";
+          })
+          .map(function (chunk) {
+            return decodePngTextChunk(chunk.data, chunk.type);
+          })
+          .filter(chunk => chunk.keyword !== "Unknown");
+
+        console.log("提取的文本块:", textChunks);
+        return textChunks;
+      }
+      return [];
+    }
+
+    // =============================================================================
+    // 隐写术解析模块
+    // =============================================================================
+    
     // 隐写术EXIF提取
     async function getStealthExif(src) {
       let time = performance.now();
@@ -1000,7 +1094,7 @@
         }
       }
 
-      const magic = "stealth_pngcomp";
+      const magic = CONFIG.NOVELAI.STEGANOGRAPHY_MAGIC;
       const reader = new DataReader(lowestData);
       const readMagic = reader.readNBytes(magic.length);
       const magicString = String.fromCharCode.apply(null, readMagic);
@@ -1022,6 +1116,10 @@
       return null;
     }
 
+    // =============================================================================
+    // 数据解析模块
+    // =============================================================================
+    
     // 解析NovelAI的JSON数据
     function parseNovelAIData(details) {
       const result = {
@@ -1193,6 +1291,34 @@
       return result;
     }
 
+    // 处理WebUI格式数据
+    function handleWebUiTag(data) {
+      let [prompts, otherParas] = data.text.split("Steps: ");
+      let promptSplit = prompts.split("Negative prompt: ");
+      let negativePrompt = promptSplit.length > 1 ? promptSplit[1] : "无";
+      return [
+        {
+          label: "提示词",
+          value: promptSplit[0],
+          copyable: true,
+        },
+        {
+          label: "负面提示词",
+          value: negativePrompt,
+          copyable: true,
+        },
+        {
+          label: "其他参数",
+          value: "Steps: " + otherParas,
+          copyable: true,
+        },
+      ];
+    }
+
+    // =============================================================================
+    // UI渲染模块
+    // =============================================================================
+    
     // 渲染技术参数到左侧
     function renderTechnicalParams(technicalData) {
       const technicalPanel = document.getElementById("technicalPanel");
@@ -1278,7 +1404,7 @@
 
         const itemEl = document.createElement("div");
         itemEl.className = "info-item";
-        itemEl.style.animationDelay = `${index * 0.1}s`;
+        itemEl.style.animationDelay = `${index * CONFIG.UI.ANIMATION_DELAY_STEP}s`;
 
         const labelEl = document.createElement("div");
         labelEl.className = "info-label";
@@ -1333,6 +1459,27 @@
       return section;
     }
 
+    // =============================================================================
+    // 图片预览和状态管理模块
+    // =============================================================================
+    
+    // 应用状态管理
+    const AppState = {
+      currentFile: null,
+      
+      setCurrentFile(file) {
+        this.currentFile = file;
+      },
+      
+      getCurrentFile() {
+        return this.currentFile;
+      },
+      
+      clearCurrentFile() {
+        this.currentFile = null;
+      }
+    };
+
     // 显示图片预览和基本信息
     function showImagePreview(file, modelInfo = null) {
       const uploadArea = document.getElementById("uploadArea");
@@ -1354,8 +1501,7 @@
 
         // 显示文件信息
         // 计算可用宽度，大约是容器宽度减去padding
-        const maxWidth = 250; // 估算的最大宽度
-        const displayFilename = truncateFilename(file.name, maxWidth);
+        const displayFilename = truncateFilename(file.name, CONFIG.UI.FILENAME_MAX_WIDTH);
         imageFilename.textContent = displayFilename;
         imageFilename.title = file.name; // 鼠标悬停显示完整文件名
 
@@ -1384,7 +1530,7 @@
     // 更新图片信息中的模型显示
     function updateImageModelInfo(modelInfo) {
       const imageDetails = document.getElementById("imageDetails");
-      const file = window.currentFile; // 需要保存当前文件引用
+      const file = AppState.getCurrentFile();
 
       if (imageDetails && modelInfo && file) {
         const detailsHtml = `
@@ -1401,63 +1547,180 @@
       }
     }
 
-    // 提取元数据
-    async function extractMetadata(file) {
-      if (file.type === "image/png") {
-        const buf = await file.arrayBuffer();
-        let chunks = [];
-        try {
-          chunks = extractPngChunks(buf);
-        } catch (err) {
-          console.error("PNG chunk 解析失败:", err);
-          return [];
-        }
+    // 重置界面的函数
+    function resetInterface() {
+      const uploadArea = document.getElementById("uploadArea");
+      const uploadContent = document.getElementById("uploadContent");
+      const previewImage = document.getElementById("previewImage");
+      const imageInfo = document.getElementById("imageInfo");
+      const technicalPanel = document.getElementById("technicalPanel");
+      const rightPanel = document.getElementById("rightPanel");
+      
+      uploadArea.classList.remove("has-image");
+      uploadContent.style.display = "flex";
+      previewImage.style.display = "none";
+      imageInfo.style.display = "none";
+      technicalPanel.style.display = "none";
+      rightPanel.style.display = "none";
+      AppState.clearCurrentFile();
 
-        const textChunks = chunks
-          .filter(function (chunk) {
-            return chunk.type === "tEXt" || chunk.type === "iTXt";
-          })
-          .map(function (chunk) {
-            return decodePngTextChunk(chunk.data, chunk.type);
-          })
-          .filter(chunk => chunk.keyword !== "Unknown");
-
-        console.log("提取的文本块:", textChunks);
-        return textChunks;
+      // 清除文件名的点击事件
+      const imageFilename = document.getElementById("imageFilename");
+      if (imageFilename) {
+        imageFilename.onclick = null;
+        imageFilename.title = "";
       }
-      return [];
     }
 
-    // 处理WebUI格式数据
-    function handleWebUiTag(data) {
-      let [prompts, otherParas] = data.text.split("Steps: ");
-      let promptSplit = prompts.split("Negative prompt: ");
-      let negativePrompt = promptSplit.length > 1 ? promptSplit[1] : "无";
-      return [
-        {
-          label: "提示词",
-          value: promptSplit[0],
-          copyable: true,
-        },
-        {
-          label: "负面提示词",
-          value: negativePrompt,
-          copyable: true,
-        },
-        {
-          label: "其他参数",
-          value: "Steps: " + otherParas,
-          copyable: true,
-        },
+    // =============================================================================
+    // 主要处理流程
+    // =============================================================================
+    
+         // 处理隐写术数据
+     async function processStealthExif(imageSrc) {
+       console.log("尝试隐写术提取...");
+       const exif = await getStealthExif(imageSrc);
+       
+       if (!exif) {
+         return {
+           metaType: CONFIG.METADATA_TYPES.UNKNOWN,
+           promptsData: [{
+             label: "提示",
+             value: "😭 无法读取到图像 Metadata，这可能不是一张 Stable Diffusion 生成的图。或者不是原图, 经过了压缩。",
+             copyable: false,
+           }],
+           stealthExifData: null
+         };
+       }
+
+      console.log("隐写术提取成功:", exif);
+      const promptsData = [];
+
+      // 处理隐写术数据
+      for (const [key, value] of Object.entries(exif)) {
+        if (key === "Comment") {
+          // Comment包含完整的JSON数据，需要解析
+          try {
+            const jsonData = JSON.parse(value);
+            console.log("隐写术Comment JSON data:", jsonData);
+            const novelAIData = parseNovelAIData(jsonData);
+            promptsData.push(...novelAIData.prompts);
+            // 设置技术参数
+            renderTechnicalParams(novelAIData.technical);
+          } catch (e) {
+            console.error("解析隐写术Comment JSON失败:", e);
+            promptsData.push({
+              label: "Comment",
+              value: value,
+              copyable: true,
+            });
+          }
+        } else if (key === "Description") {
+          // Description通常是主prompt
+          promptsData.push({
+            label: "主Prompt (Description)",
+            value: value,
+            copyable: true,
+          });
+        }
+      }
+
+      // 更新图片显示中的模型信息
+      if (exif.Source) {
+        updateImageModelInfo(exif.Source);
+      }
+
+             return {
+         metaType: CONFIG.METADATA_TYPES.NOVELAI,
+         promptsData,
+         stealthExifData: exif
+       };
+    }
+
+         // 处理PNG文本块数据
+     function processPngTextChunks(metadata) {
+       const promptsData = [];
+       let metaType = CONFIG.METADATA_TYPES.SD_WEBUI;
+
+      if (metadata.length === 1 && metadata[0].keyword === "parameters") {
+        // SD WebUI 格式
+        const webUIData = handleWebUiTag(metadata[0]);
+        promptsData.push(...webUIData);
+        renderTechnicalParams([]);
+      } else {
+        // 处理PNG文本块中的NovelAI Comment格式
+        for (const meta of metadata) {
+          if (meta.keyword === "Comment") {
+            try {
+              const jsonData = JSON.parse(meta.text);
+              console.log("PNG文本块 NovelAI JSON data:", jsonData);
+              const novelAIData = parseNovelAIData(jsonData);
+              promptsData.push(...novelAIData.prompts);
+              // 设置技术参数
+              renderTechnicalParams(novelAIData.technical);
+              metaType = CONFIG.METADATA_TYPES.NOVELAI;
+            } catch (e) {
+              console.error("解析PNG文本块Comment JSON失败:", e);
+              promptsData.push({
+                label: meta.keyword,
+                value: meta.text,
+                copyable: true,
+              });
+            }
+          } else if (meta.keyword === "Source") {
+            // 更新模型信息显示
+            if (meta.text) {
+              updateImageModelInfo(meta.text);
+            }
+          } else if (meta.keyword === "Description") {
+            promptsData.push({
+              label: "主Prompt (Description)",
+              value: meta.text,
+              copyable: true,
+            });
+          } else if (meta.keyword !== "Software" && meta.keyword !== "Generation time") {
+            // 其他非基础信息的字段作为prompt处理
+            promptsData.push({
+              label: meta.keyword,
+              value: meta.text,
+              copyable: true,
+            });
+          }
+        }
+      }
+
+      return { metaType, promptsData };
+    }
+
+    // 构建基础信息
+    function buildBasicInfo(file, metaType, stealthExifData) {
+      const basicInfo = [
+        { label: "文件名", value: file.name },
+        { label: "文件大小", value: formatFileSize(file.size) },
       ];
+
+             // 如果有模型信息，添加到基础信息中
+       if (metaType === CONFIG.METADATA_TYPES.NOVELAI && stealthExifData) {
+        if (stealthExifData.Software) {
+          basicInfo.push({ label: "软件", value: stealthExifData.Software });
+        }
+        if (stealthExifData.Source) {
+          basicInfo.push({ label: "模型", value: stealthExifData.Source });
+        }
+        if (stealthExifData["Generation time"]) {
+          basicInfo.push({ label: "生成时间", value: stealthExifData["Generation time"] + "s" });
+        }
+      }
+
+      return basicInfo;
     }
 
-    // 处理图片
+    // 处理图片主函数
     async function processImage(file) {
       const rightPanel = document.getElementById("rightPanel");
 
       // 保存当前文件引用用于后续更新
-      window.currentFile = file;
+      AppState.setCurrentFile(file);
 
       // 显示图片预览
       showImagePreview(file);
@@ -1467,193 +1730,69 @@
       reader.onload = async (e) => {
         const imageSrc = e.target.result;
 
-        // 提取元数据
-        let metaType = "SD-WEBUI";
-        let parsed = [];
-        let metadata = await extractMetadata(file);
-        let stealthExifData = null;
+        try {
+          // 提取元数据
+          const metadata = await extractMetadata(file);
+          console.log("提取的元数据:", metadata);
 
-        console.log("提取的元数据:", metadata);
+          let metaType, promptsData, stealthExifData = null;
 
-        // 初始化数据容器
-        let promptsData = [];
-        let basicInfoExtra = [];
-
-        if (metadata.length == 0) {
-          console.log("尝试隐写术提取...");
-          let exif = await getStealthExif(imageSrc);
-          if (exif) {
-            console.log("隐写术提取成功:", exif);
-            stealthExifData = exif;  // 保存到外层作用域
-
-            // 处理隐写术数据
-            for (const [key, value] of Object.entries(exif)) {
-              if (key === "Comment") {
-                // Comment包含完整的JSON数据，需要解析
-                try {
-                  const jsonData = JSON.parse(value);
-                  console.log("隐写术Comment JSON data:", jsonData);
-                  const novelAIData = parseNovelAIData(jsonData);
-                  promptsData = [...promptsData, ...novelAIData.prompts];
-
-                  // 设置技术参数
-                  renderTechnicalParams(novelAIData.technical);
-                } catch (e) {
-                  console.error("解析隐写术Comment JSON失败:", e);
-                  promptsData.push({
-                    label: "Comment",
-                    value: value,
-                    copyable: true,
-                  });
-                }
-              } else if (key === "Description") {
-                // Description通常是主prompt
-                promptsData.push({
-                  label: "主Prompt (Description)",
-                  value: value,
-                  copyable: true,
-                });
-              }
-              // Source、Software、Generation time 等会在后面的 basicInfoExtra 中处理
-            }
-
-            metaType = "NOVELAI";
-
-            // 更新图片显示中的模型信息
-            if (exif.Source) {
-              updateImageModelInfo(exif.Source);
-            }
+          if (metadata.length === 0) {
+            // 尝试隐写术提取
+            const stealthResult = await processStealthExif(imageSrc);
+            metaType = stealthResult.metaType;
+            promptsData = stealthResult.promptsData;
+            stealthExifData = stealthResult.stealthExifData;
           } else {
-            promptsData.push({
-              label: "提示",
-              value: "😭 无法读取到图像 Metadata，这可能不是一张 Stable Diffusion 生成的图。或者不是原图, 经过了压缩。",
-              copyable: false,
+            // 处理PNG文本块
+            const pngResult = processPngTextChunks(metadata);
+            metaType = pngResult.metaType;
+            promptsData = pngResult.promptsData;
+          }
+
+          // 构建完整数据结构
+          const basicInfo = buildBasicInfo(file, metaType, stealthExifData);
+          const allData = {
+            basic: basicInfo,
+            prompts: promptsData,
+            technical: [],
+            exif: [],
+          };
+
+                     // 添加SD-WEBUI完整信息
+           if (metaType === CONFIG.METADATA_TYPES.SD_WEBUI && metadata.length > 0) {
+            allData.prompts.push({
+              key: "完整生成信息",
+              value: metadata[0]["text"],
+              copyable: true,
             });
           }
-        } else if (metadata.length == 1 && metadata[0].keyword === "parameters") {
-          // SD WebUI 格式
-          const webUIData = handleWebUiTag(metadata[0]);
-          promptsData = webUIData;
-          renderTechnicalParams([]);
-        } else {
-          // 处理PNG文本块中的NovelAI Comment格式
-          for (const meta of metadata) {
-            if (meta.keyword === "Comment") {
-              try {
-                const jsonData = JSON.parse(meta.text);
-                console.log("PNG文本块 NovelAI JSON data:", jsonData);
-                const novelAIData = parseNovelAIData(jsonData);
-                promptsData = [...promptsData, ...novelAIData.prompts];
 
-                // 设置技术参数
-                renderTechnicalParams(novelAIData.technical);
-                metaType = "NOVELAI";
-              } catch (e) {
-                console.error("解析PNG文本块Comment JSON失败:", e);
-                promptsData.push({
-                  label: meta.keyword,
-                  value: meta.text,
-                  copyable: true,
-                });
-              }
-            } else if (meta.keyword === "Source") {
-              // 模型信息会在basicInfoExtra中处理
-              if (meta.text) {
-                updateImageModelInfo(meta.text);
-              }
-            } else if (meta.keyword === "Description") {
-              promptsData.push({
-                label: "主Prompt (Description)",
-                value: meta.text,
-                copyable: true,
-              });
-            } else if (meta.keyword !== "Software" && meta.keyword !== "Generation time") {
-              // 其他非基础信息的字段作为prompt处理
-              promptsData.push({
-                label: meta.keyword,
-                value: meta.text,
-                copyable: true,
-              });
-            }
+                     // 如果不是NovelAI格式，渲染空的技术参数
+           if (metaType !== CONFIG.METADATA_TYPES.NOVELAI) {
+            renderTechnicalParams([]);
           }
-        }
 
-        // 转换为统一格式
-        parsed = promptsData;
+          // 渲染信息到右侧
+          renderInfo(allData);
+          rightPanel.style.display = "block";
 
-        // 构建基础信息
-        let basicInfo = [
-          { label: "文件名", value: file.name },
-          { label: "文件大小", value: formatFileSize(file.size) },
-        ];
-
-        // 如果有模型信息，添加到基础信息中
-        if (metaType === "NOVELAI" && stealthExifData) {
-          if (stealthExifData.Software) {
-            basicInfo.push({ label: "软件", value: stealthExifData.Software });
-          }
-          if (stealthExifData.Source) {
-            basicInfo.push({ label: "模型", value: stealthExifData.Source });
-          }
-          if (stealthExifData["Generation time"]) {
-            basicInfo.push({ label: "生成时间", value: stealthExifData["Generation time"] + "s" });
-          }
-        }
-        let allData = {
-          basic: basicInfo,
-          prompts: parsed, // parsed 现在已经是正确的格式了
-          technical: [],
-          exif: [],
-        };
-
-        if (metaType == "SD-WEBUI" && metadata.length > 0) {
-          allData.prompts.push({
-            key: "完整生成信息",
-            value: metadata[0]["text"],
-            copyable: true,
-          });
-        }
-
-        // 如果没有找到prompt相关信息且只是技术参数，也要渲染空的技术参数
-        if (metaType !== "NOVELAI") {
-          renderTechnicalParams([]);
-        }
-
-        // 渲染其他信息到右侧
-        renderInfo(allData);
-        rightPanel.style.display = "block";
+                 } catch (error) {
+           ErrorHandler.handleProcessingError(error, "处理图片");
+         }
       };
 
       reader.readAsDataURL(file);
     }
 
+    // =============================================================================
+    // 初始化和事件绑定
+    // =============================================================================
+    
     // 初始化上传功能
     document.addEventListener("DOMContentLoaded", () => {
       const uploadArea = document.getElementById("uploadArea");
       const fileInput = document.getElementById("fileInput");
-      const uploadContent = document.getElementById("uploadContent");
-      const previewImage = document.getElementById("previewImage");
-      const imageInfo = document.getElementById("imageInfo");
-      const technicalPanel = document.getElementById("technicalPanel");
-      const rightPanel = document.getElementById("rightPanel");
-
-      // 重置界面的函数
-      function resetInterface() {
-        uploadArea.classList.remove("has-image");
-        uploadContent.style.display = "flex";
-        previewImage.style.display = "none";
-        imageInfo.style.display = "none";
-        technicalPanel.style.display = "none";
-        rightPanel.style.display = "none";
-        window.currentFile = null;
-
-        // 清除文件名的点击事件
-        const imageFilename = document.getElementById("imageFilename");
-        if (imageFilename) {
-          imageFilename.onclick = null;
-          imageFilename.title = "";
-        }
-      }
 
       uploadArea.addEventListener("click", (e) => {
         // 如果点击的是图片，询问是否要选择新图片
