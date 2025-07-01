@@ -33,6 +33,7 @@
       color: white;
       border-radius: 16px;
       box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+      position: relative;
     }
 
     .header h1 {
@@ -44,6 +45,29 @@
     .header p {
       font-size: 1.1rem;
       opacity: 0.9;
+    }
+
+    .header-controls {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+    }
+
+    .settings-btn {
+      background: rgba(255, 255, 255, 0.2);
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      color: white;
+      padding: 8px 12px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 0.9rem;
+      transition: all 0.3s ease;
+      backdrop-filter: blur(10px);
+    }
+
+    .settings-btn:hover {
+      background: rgba(255, 255, 255, 0.3);
+      transform: translateY(-1px);
     }
 
     .main-content {
@@ -510,12 +534,249 @@
       opacity: 1;
       transform: translateY(0);
     }
+
+    /* 设置面板样式 */
+    .settings-modal {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.5);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 2000;
+      backdrop-filter: blur(5px);
+    }
+
+    .settings-modal.show {
+      display: flex;
+    }
+
+    .settings-panel {
+      background: white;
+      border-radius: 16px;
+      padding: 30px;
+      max-width: 500px;
+      width: 90%;
+      max-height: 80vh;
+      overflow-y: auto;
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.2);
+      animation: modalSlideIn 0.3s ease;
+    }
+
+    @keyframes modalSlideIn {
+      from {
+        opacity: 0;
+        transform: translateY(-20px) scale(0.95);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+    }
+
+    .settings-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 25px;
+      padding-bottom: 15px;
+      border-bottom: 1px solid #e8ebf4;
+    }
+
+    .settings-title {
+      font-size: 1.5rem;
+      font-weight: 600;
+      color: #333;
+    }
+
+    .close-btn {
+      background: none;
+      border: none;
+      font-size: 1.5rem;
+      cursor: pointer;
+      color: #999;
+      padding: 5px;
+      border-radius: 4px;
+      transition: all 0.2s ease;
+    }
+
+    .close-btn:hover {
+      background: #f0f0f0;
+      color: #666;
+    }
+
+    .setting-group {
+      margin-bottom: 25px;
+    }
+
+    .setting-label {
+      display: block;
+      font-weight: 600;
+      color: #555;
+      margin-bottom: 8px;
+      font-size: 0.95rem;
+    }
+
+    .setting-input {
+      width: 100%;
+      padding: 12px 15px;
+      border: 1px solid #e0e6ed;
+      border-radius: 8px;
+      font-size: 0.95rem;
+      transition: all 0.3s ease;
+    }
+
+    .setting-input:focus {
+      outline: none;
+      border-color: #667eea;
+      box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    }
+
+    .setting-description {
+      font-size: 0.85rem;
+      color: #666;
+      margin-top: 5px;
+      line-height: 1.4;
+    }
+
+    .setting-toggle {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .toggle-switch {
+      position: relative;
+      width: 50px;
+      height: 26px;
+      background: #ddd;
+      border-radius: 13px;
+      cursor: pointer;
+      transition: background 0.3s ease;
+    }
+
+    .toggle-switch.active {
+      background: #667eea;
+    }
+
+    .toggle-slider {
+      position: absolute;
+      top: 2px;
+      left: 2px;
+      width: 22px;
+      height: 22px;
+      background: white;
+      border-radius: 50%;
+      transition: transform 0.3s ease;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    }
+
+    .toggle-switch.active .toggle-slider {
+      transform: translateX(24px);
+    }
+
+    .save-btn {
+      background: #667eea;
+      color: white;
+      border: none;
+      padding: 12px 25px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 0.95rem;
+      font-weight: 500;
+      transition: all 0.3s ease;
+      width: 100%;
+    }
+
+    .save-btn:hover {
+      background: #5a67d8;
+      transform: translateY(-1px);
+    }
+
+    .save-btn:disabled {
+      background: #ccc;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    /* 翻译相关样式 */
+    .prompt-container {
+      position: relative;
+    }
+
+    .prompt-translation {
+      font-size: 0.85rem;
+      color: #666;
+      font-style: italic;
+      margin-top: 8px;
+      padding-top: 8px;
+      border-top: 1px solid #f0f0f0;
+      line-height: 1.7;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      word-break: break-word;
+      overflow-wrap: break-word;
+    }
+
+    .translation-loading {
+      color: #999;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .translation-error {
+      color: #e53e3e;
+    }
+
+    /* Tag翻译样式 */
+    .translation-tag {
+      display: inline;
+      transition: all 0.2s ease;
+      border-radius: 3px;
+      padding: 1px 2px;
+    }
+
+    .translation-comma {
+      color: #a0aec0;
+    }
+
+    /* 悬停高亮效果 */
+    .prompt-tag.highlighted {
+      background-color: rgba(102, 126, 234, 0.15);
+      transform: scale(1.02);
+    }
+
+    .translation-tag.highlighted {
+      background-color: rgba(102, 126, 234, 0.15);
+      transform: scale(1.02);
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    .spinner {
+      display: inline-block;
+      width: 12px;
+      height: 12px;
+      border: 2px solid #f3f3f3;
+      border-top: 2px solid #999;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
   </style>
 </head>
 
 <body>
   <div class="container">
     <div class="header">
+      <div class="header-controls">
+        <button class="settings-btn" id="settingsBtn">⚙️ 设置</button>
+      </div>
       <h1>🎨 NovelAI 图片解析</h1>
       <p>从 NovelAI 生成的图片中提取详细参数信息</p>
     </div>
@@ -559,12 +820,186 @@
 
   <div class="toast" id="toast"></div>
 
+  <!-- 设置面板 -->
+  <div class="settings-modal" id="settingsModal">
+    <div class="settings-panel">
+      <div class="settings-header">
+        <h2 class="settings-title">🛠️ 设置</h2>
+        <button class="close-btn" id="closeSettingsBtn">×</button>
+      </div>
+      
+      <div class="setting-group">
+        <label class="setting-label" for="apiKeyInput">Gemini API Key</label>
+        <input type="password" id="apiKeyInput" class="setting-input" placeholder="输入您的 Gemini API Key">
+        <div class="setting-description">
+          请输入您的 Google Gemini API Key。您可以在 <a href="https://aistudio.google.com/app/apikey" target="_blank">Google AI Studio</a> 获取。
+          API Key 将安全保存在您的本地浏览器中，不会上传到任何服务器。
+        </div>
+      </div>
+
+      <div class="setting-group">
+        <div class="setting-toggle">
+          <label class="setting-label">启用AI翻译</label>
+          <div class="toggle-switch" id="translationToggle">
+            <div class="toggle-slider"></div>
+          </div>
+        </div>
+        <div class="setting-description">
+          开启后，将使用 Gemini AI 自动翻译提示词为中文。翻译结果会显示在原文下方。
+        </div>
+      </div>
+
+      <button class="save-btn" id="saveSettingsBtn">保存设置</button>
+    </div>
+  </div>
+
   <!-- 引入必要的库 -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pako/2.1.0/pako.min.js"></script>
   <script>
     // =============================================================================
     // 工具函数模块
     // =============================================================================
+    
+    // =============================================================================
+    // 设置管理模块
+    // =============================================================================
+    
+    const SettingsManager = {
+      STORAGE_KEYS: {
+        API_KEY: 'gemini_api_key',
+        TRANSLATION_ENABLED: 'translation_enabled'
+      },
+
+      getApiKey() {
+        return localStorage.getItem(this.STORAGE_KEYS.API_KEY) || '';
+      },
+
+      setApiKey(key) {
+        if (key) {
+          localStorage.setItem(this.STORAGE_KEYS.API_KEY, key);
+        } else {
+          localStorage.removeItem(this.STORAGE_KEYS.API_KEY);
+        }
+      },
+
+      isTranslationEnabled() {
+        return localStorage.getItem(this.STORAGE_KEYS.TRANSLATION_ENABLED) === 'true';
+      },
+
+      setTranslationEnabled(enabled) {
+        localStorage.setItem(this.STORAGE_KEYS.TRANSLATION_ENABLED, enabled.toString());
+      },
+
+      hasValidApiKey() {
+        const key = this.getApiKey();
+        return key && key.length > 0;
+      }
+    };
+
+    // =============================================================================
+    // Gemini API 翻译模块
+    // =============================================================================
+    
+    const GeminiTranslator = {
+      API_ENDPOINT: 'https://generativelanguage.googleapis.com/v1beta/models',
+      MODEL: 'gemini-2.5-flash',
+
+      async translateTags(tagsArray) {
+        const apiKey = SettingsManager.getApiKey();
+        if (!apiKey || !SettingsManager.isTranslationEnabled()) {
+          return [];
+        }
+
+        try {
+          // 过滤掉空标签和权重标记
+          const validTags = tagsArray.filter(tag => 
+            tag && 
+            tag.trim() && 
+            !tag.match(/^[\d.]+::$/) && 
+            !tag.match(/^::$/) &&
+            !tag.match(/^[{}\[\]]+$/)
+          );
+
+          if (validTags.length === 0) {
+            return [];
+          }
+
+          const promptText = `你是一个专业的AI绘画提示词翻译助手。我会给你一个英文AI绘画标签(tags)的数组，请将每个标签翻译成中文。
+
+要求：
+1. 保持专业术语的准确性
+2. 尽量保持原意，对于艺术家名等不要翻译。
+3. 翻译要简洁准确且易懂，例如对于dutch angle等术语，需要翻译为斜角镜头等易懂的词汇
+4. 直接返回翻译后的数组，格式如：["翻译1", "翻译2", "翻译3"]
+
+请只返回JSON数组，不要包含其他内容。
+
+需要翻译的标签数组：
+${JSON.stringify(validTags)}`;
+
+          const requestBody = {
+            contents: [
+              {
+                role: "user",
+                parts: [
+                  {
+                    text: promptText
+                  }
+                ]
+              }
+            ],
+            generationConfig: {
+              responseMimeType: "text/plain",
+              temperature: 0.2
+            }
+          };
+
+          const response = await fetch(`${this.API_ENDPOINT}/${this.MODEL}:generateContent?key=${apiKey}`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(requestBody)
+          });
+
+          if (!response.ok) {
+            throw new Error(`API请求失败: ${response.status} ${response.statusText}`);
+          }
+
+          const data = await response.json();
+          const content = data.candidates?.[0]?.content?.parts?.[0]?.text;
+          
+          if (!content) {
+            throw new Error('API返回内容为空');
+          }
+
+          // 解析JSON响应
+          let translations;
+          try {
+            translations = JSON.parse(content.trim());
+          } catch (e) {
+            // 如果不是JSON格式，尝试提取JSON数组部分
+            const jsonMatch = content.match(/\[[\s\S]*\]/);
+            if (jsonMatch) {
+              translations = JSON.parse(jsonMatch[0]);
+            } else {
+              throw new Error('无法解析翻译结果');
+            }
+          }
+
+          if (!Array.isArray(translations)) {
+            throw new Error('翻译结果格式错误');
+          }
+
+          return translations;
+
+        } catch (error) {
+          console.error('翻译失败:', error);
+          showToast(`翻译失败: ${error.message}`);
+          return [];
+        }
+      }
+    };
     
     // DOM工具函数
     const DOMUtils = {
@@ -708,12 +1143,11 @@
 
       // NovelAI配置
       NOVELAI: {
-        DEFAULT_POSITIVE_TAGS: ["very aesthetic", "location", "masterpiece", "no text", "feet", "rating:general"],
+        DEFAULT_POSITIVE_TAGS: ["very aesthetic", "masterpiece", "no text"],
         DEFAULT_NEGATIVE_TAGS: [
-          "blurry", "lowres", "upscaled", "artistic error", "film grain", "scan artifacts",
-          "worst quality", "bad quality", "jpeg artifacts", "very displeasing", 
-          "chromatic aberration", "halftone", "multiple views", "logo", 
-          "too many watermarks", "negative space", "blank page",
+          "nsfw","lowres","artistic error","film grain","scan artifacts","worst quality","bad quality",
+          "jpeg artifacts","very displeasing","chromatic aberration","dithering","halftone",
+          "screentone","multiple views","logo","too many watermarks","negative space","blank page"
         ],
         WEIGHT_MULTIPLIER: 1.1,
         STEGANOGRAPHY_MAGIC: "stealth_pngcomp"
@@ -903,12 +1337,23 @@
       return tokens;
     }
 
+    // 提取prompt中的纯文本tags（用于翻译）
+    function extractTextTags(prompt) {
+      const formatted = formatPrompt(prompt);
+      const tokens = parsePromptWeights(formatted);
+      
+      return tokens
+        .filter(token => token.type === "text" && token.content && token.content.trim())
+        .map(token => token.content.trim());
+    }
+
     // 渲染权重高亮的Prompt
     function renderHighlightedPrompt(prompt, isNegativePrompt = false) {
       const formatted = formatPrompt(prompt);
       const tokens = parsePromptWeights(formatted);
 
       let html = "";
+      let textTagIndex = 0; // 用于追踪文本tag的索引
 
       tokens.forEach((token, index) => {
         if (token.type === "weight-marker") {
@@ -930,7 +1375,9 @@
             className = "prompt-tag weight-low";
           }
 
-          html += `<span class="${className}">${escapeHtml(token.content)}</span>`;
+          // 添加data-tag-index用于悬停效果
+          html += `<span class="${className}" data-tag-index="${textTagIndex}">${escapeHtml(token.content)}</span>`;
+          textTagIndex++;
 
           // 在文本token后添加空格，除非下一个token是逗号或权重标记
           if (index < tokens.length - 1) {
@@ -942,6 +1389,20 @@
         }
       });
 
+      return html;
+    }
+
+    // 渲染翻译结果
+    function renderTranslatedTags(translations) {
+      let html = "";
+      
+      translations.forEach((translation, index) => {
+        if (index > 0) {
+          html += `<span class="translation-comma">, </span>`;
+        }
+        html += `<span class="translation-tag" data-tag-index="${index}">${escapeHtml(translation)}</span>`;
+      });
+      
       return html;
     }
 
@@ -1376,6 +1837,11 @@
         if (filteredPrompts.length > 0) {
           const section = createSection("Prompts", "✨", filteredPrompts);
           container.appendChild(section);
+          
+          // 如果启用了翻译，开始翻译prompt
+          if (SettingsManager.isTranslationEnabled() && SettingsManager.hasValidApiKey()) {
+            translatePrompts(filteredPrompts);
+          }
         }
       }
 
@@ -1384,6 +1850,114 @@
         const section = createSection("EXIF信息", "📷", data.exif);
         container.appendChild(section);
       }
+    }
+
+    // 异步翻译prompt函数
+    async function translatePrompts(promptsArray) {
+      // 只翻译prompt类型的内容
+      const promptsToTranslate = promptsArray.filter(item => {
+        const label = (item.label || item.key || '').toLowerCase();
+        return label.includes('prompt') || label.includes('caption') || label === 'description';
+      });
+
+      if (promptsToTranslate.length === 0) return;
+
+      // 显示翻译加载状态
+      promptsToTranslate.forEach((item, index) => {
+        const promptContainer = document.querySelector(`[data-prompt-index="${index}"]`);
+        if (promptContainer) {
+          const translationContainer = promptContainer.querySelector('.prompt-translation');
+          if (translationContainer) {
+            translationContainer.style.display = 'block';
+            translationContainer.innerHTML = '<div class="translation-loading"><span class="spinner"></span>正在翻译...</div>';
+          }
+        }
+      });
+
+      // 为每个prompt单独翻译
+      for (let index = 0; index < promptsToTranslate.length; index++) {
+        const item = promptsToTranslate[index];
+        const promptContainer = document.querySelector(`[data-prompt-index="${index}"]`);
+        
+        if (!promptContainer) continue;
+        
+        const translationContainer = promptContainer.querySelector('.prompt-translation');
+        if (!translationContainer) continue;
+
+        try {
+          // 提取tags
+          const tags = extractTextTags(item.value);
+          
+          if (tags.length === 0) {
+            translationContainer.innerHTML = '<div class="translation-error">无可翻译的标签</div>';
+            continue;
+          }
+
+          // 翻译tags
+          const translations = await GeminiTranslator.translateTags(tags);
+          
+          if (translations.length > 0) {
+            // 渲染翻译结果
+            const translatedHtml = renderTranslatedTags(translations);
+            translationContainer.innerHTML = `${translatedHtml}`;
+            
+            // 添加悬停效果
+            addHoverEffects(promptContainer);
+          } else {
+            translationContainer.innerHTML = '<div class="translation-error">翻译失败</div>';
+          }
+          
+        } catch (error) {
+          console.error(`翻译第${index + 1}个prompt失败:`, error);
+          translationContainer.innerHTML = '<div class="translation-error">翻译失败</div>';
+        }
+      }
+    }
+
+    // 添加悬停效果
+    function addHoverEffects(promptContainer) {
+      const originalTags = promptContainer.querySelectorAll('.prompt-tag[data-tag-index]');
+      const translationTags = promptContainer.querySelectorAll('.translation-tag[data-tag-index]');
+
+      // 为原始tags添加悬停效果
+      originalTags.forEach(originalTag => {
+        const tagIndex = originalTag.dataset.tagIndex;
+        const correspondingTranslation = promptContainer.querySelector(`.translation-tag[data-tag-index="${tagIndex}"]`);
+        
+        originalTag.addEventListener('mouseenter', () => {
+          originalTag.classList.add('highlighted');
+          if (correspondingTranslation) {
+            correspondingTranslation.classList.add('highlighted');
+          }
+        });
+        
+        originalTag.addEventListener('mouseleave', () => {
+          originalTag.classList.remove('highlighted');
+          if (correspondingTranslation) {
+            correspondingTranslation.classList.remove('highlighted');
+          }
+        });
+      });
+
+      // 为翻译tags添加悬停效果
+      translationTags.forEach(translationTag => {
+        const tagIndex = translationTag.dataset.tagIndex;
+        const correspondingOriginal = promptContainer.querySelector(`.prompt-tag[data-tag-index="${tagIndex}"]`);
+        
+        translationTag.addEventListener('mouseenter', () => {
+          translationTag.classList.add('highlighted');
+          if (correspondingOriginal) {
+            correspondingOriginal.classList.add('highlighted');
+          }
+        });
+        
+        translationTag.addEventListener('mouseleave', () => {
+          translationTag.classList.remove('highlighted');
+          if (correspondingOriginal) {
+            correspondingOriginal.classList.remove('highlighted');
+          }
+        });
+      });
     }
 
     function createSection(title, icon, items) {
@@ -1443,15 +2017,32 @@
           // 判断是否为负面prompt
           const isNegativePrompt = labelToCheck.includes("负面") || labelToCheck.includes("negative");
 
+          // 创建prompt容器
+          const promptContainer = document.createElement("div");
+          promptContainer.className = "prompt-container";
+          
           // 对prompt内容进行格式化和高亮
           valueEl.classList.add("formatted-prompt");
           valueEl.innerHTML = renderHighlightedPrompt(item.value, isNegativePrompt);
+          
+          promptContainer.appendChild(valueEl);
+          
+          // 创建翻译容器
+          const translationContainer = document.createElement("div");
+          translationContainer.className = "prompt-translation";
+          translationContainer.style.display = "none";
+          promptContainer.appendChild(translationContainer);
+          
+          itemEl.appendChild(promptContainer);
+          
+          // 存储prompt信息用于翻译
+          promptContainer.dataset.promptIndex = index;
+          promptContainer.dataset.promptValue = item.value;
         } else {
           // 普通文本内容
           valueEl.textContent = item.value;
+          itemEl.appendChild(valueEl);
         }
-
-        itemEl.appendChild(valueEl);
 
         section.appendChild(itemEl);
       });
@@ -1789,8 +2380,87 @@
     // 初始化和事件绑定
     // =============================================================================
     
+    // =============================================================================
+    // 设置面板功能
+    // =============================================================================
+    
+    function initializeSettings() {
+      const settingsBtn = document.getElementById('settingsBtn');
+      const settingsModal = document.getElementById('settingsModal');
+      const closeSettingsBtn = document.getElementById('closeSettingsBtn');
+      const apiKeyInput = document.getElementById('apiKeyInput');
+      const translationToggle = document.getElementById('translationToggle');
+      const saveSettingsBtn = document.getElementById('saveSettingsBtn');
+
+      // 加载设置
+      function loadSettings() {
+        apiKeyInput.value = SettingsManager.getApiKey();
+        
+        if (SettingsManager.isTranslationEnabled()) {
+          translationToggle.classList.add('active');
+        } else {
+          translationToggle.classList.remove('active');
+        }
+      }
+
+      // 保存设置
+      function saveSettings() {
+        const apiKey = apiKeyInput.value.trim();
+        const translationEnabled = translationToggle.classList.contains('active');
+
+        SettingsManager.setApiKey(apiKey);
+        SettingsManager.setTranslationEnabled(translationEnabled);
+
+        showToast('设置已保存');
+        closeSettings();
+      }
+
+      // 打开设置面板
+      function openSettings() {
+        loadSettings();
+        settingsModal.classList.add('show');
+      }
+
+      // 关闭设置面板
+      function closeSettings() {
+        settingsModal.classList.remove('show');
+      }
+
+      // 事件绑定
+      settingsBtn.addEventListener('click', openSettings);
+      closeSettingsBtn.addEventListener('click', closeSettings);
+      
+      // 点击模态框背景关闭
+      settingsModal.addEventListener('click', (e) => {
+        if (e.target === settingsModal) {
+          closeSettings();
+        }
+      });
+
+      // 切换开关
+      translationToggle.addEventListener('click', () => {
+        translationToggle.classList.toggle('active');
+      });
+
+      // 保存按钮
+      saveSettingsBtn.addEventListener('click', saveSettings);
+
+      // ESC键关闭
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && settingsModal.classList.contains('show')) {
+          closeSettings();
+        }
+      });
+
+      // 初始加载设置
+      loadSettings();
+    }
+
     // 初始化上传功能
     document.addEventListener("DOMContentLoaded", () => {
+      // 初始化设置功能
+      initializeSettings();
+      
       const uploadArea = document.getElementById("uploadArea");
       const fileInput = document.getElementById("fileInput");
 
