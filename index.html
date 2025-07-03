@@ -892,7 +892,8 @@
           </div>
         </div>
         <div class="setting-description">
-          开启后，将自动翻译提示词为中文。翻译结果会显示在原文下方。
+          开启后，将自动翻译提示词为中文。翻译结果会显示在原文下方。<br>
+          <small style="color: #666;">ℹ️ 首次使用时将自动下载翻译缓存，高频词汇无需调用API。</small>
         </div>
       </div>
 
@@ -1665,6 +1666,10 @@ ${JSON.stringify(validTags)}`;
     
     const TranslationManager = {
       providers: {},
+      localCache: new Map(),
+      cacheLoaded: false,
+      cacheLoading: false,
+      cacheUrl: 'https://ghfast.top/https://raw.githubusercontent.com/Natsukage/novelai-prompt-reader/main/translations.json',
 
       init() {
         this.providers = {
@@ -1672,6 +1677,80 @@ ${JSON.stringify(validTags)}`;
           [TranslationProviders.TENCENT]: TencentTranslator,
           [TranslationProviders.BAIDU]: BaiduTranslator
         };
+      },
+
+      async loadLocalCache() {
+        if (this.cacheLoaded || this.cacheLoading) {
+          return;
+        }
+
+        this.cacheLoading = true;
+        try {
+          const response = await fetch(this.cacheUrl);
+          if (!response.ok) {
+            throw new Error(`加载缓存失败: ${response.status}`);
+          }
+          
+          const translations = await response.json();
+          this.localCache = new Map(Object.entries(translations));
+          this.cacheLoaded = true;
+          console.log(`本地翻译缓存加载成功，包含 ${this.localCache.size} 个翻译条目`);
+        } catch (error) {
+          console.warn('本地翻译缓存加载失败:', error);
+        } finally {
+          this.cacheLoading = false;
+        }
+      },
+
+      getCachedTranslation(text) {
+        if (!this.cacheLoaded) {
+          return null;
+        }
+        return this.localCache.get(text.toLowerCase().trim());
+      },
+
+      async translateWithCache(tags) {
+        if (!this.cacheLoaded && !this.cacheLoading) {
+          this.loadLocalCache();
+        }
+
+        if (this.cacheLoaded) {
+          const results = [];
+          const uncachedTags = [];
+          
+          for (const tag of tags) {
+            const cached = this.getCachedTranslation(tag);
+            if (cached) {
+              results.push(cached);
+            } else {
+              uncachedTags.push(tag);
+              results.push(null);
+            }
+          }
+          
+          if (uncachedTags.length === 0) {
+            return results;
+          }
+          
+          try {
+            const apiResults = await this.robustTranslateTags(uncachedTags);
+            let apiIndex = 0;
+            
+            for (let i = 0; i < results.length; i++) {
+              if (results[i] === null) {
+                results[i] = apiResults[apiIndex];
+                apiIndex++;
+              }
+            }
+            
+            return results;
+          } catch (error) {
+            console.warn('API翻译失败，返回部分缓存结果:', error);
+            return results.map((result, index) => result || tags[index]);
+          }
+        }
+        
+        return await this.robustTranslateTags(tags);
       },
 
       async translateTags(tags, provider = null) {
@@ -1686,6 +1765,15 @@ ${JSON.stringify(validTags)}`;
         }
 
         return await this.providers[currentProvider].translateTags(tags);
+      },
+
+      async translate(tags) {
+        try {
+          return await this.translateWithCache(tags);
+        } catch (error) {
+          console.warn('翻译失败:', error);
+          return tags;
+        }
       },
 
       // 健壮翻译（带降级机制）
@@ -2633,7 +2721,7 @@ ${JSON.stringify(validTags)}`;
           }
 
           // 翻译tags
-          const translations = await TranslationManager.robustTranslateTags(tags);
+          const translations = await TranslationManager.translate(tags);
           
           if (translations.length > 0) {
             // 渲染翻译结果
@@ -3274,7 +3362,7 @@ ${JSON.stringify(validTags)}`;
           SettingsManager.setBaiduAppId(baiduAppIdInput.value.trim());
           SettingsManager.setBaiduAppKey(baiduAppKeyInput.value.trim());
 
-          // 测试翻译
+          // 测试翻译（不使用缓存，直接测试API）
           const testTags = ['test'];
           const result = await TranslationManager.translateTags(testTags, provider);
 
@@ -3382,6 +3470,9 @@ ${JSON.stringify(validTags)}`;
     document.addEventListener("DOMContentLoaded", () => {
       // 初始化设置功能
       initializeSettings();
+      
+      // 预加载翻译缓存（无论是否开启翻译，都预加载以提高性能）
+      TranslationManager.loadLocalCache();
       
       const uploadArea = document.getElementById("uploadArea");
       const fileInput = document.getElementById("fileInput");
