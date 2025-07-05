@@ -1706,7 +1706,9 @@ ${JSON.stringify(validTags)}`;
         if (!this.cacheLoaded) {
           return null;
         }
-        return this.localCache.get(text.toLowerCase().trim());
+        // 将下划线替换为空格进行缓存查找
+        const normalizedText = text.toLowerCase().trim().replace(/_/g, ' ');
+        return this.localCache.get(normalizedText);
       },
 
       async translateWithCache(tags) {
@@ -1769,10 +1771,72 @@ ${JSON.stringify(validTags)}`;
 
       async translate(tags) {
         try {
-          return await this.translateWithCache(tags);
+          // 预处理标签：过滤artist:前缀和处理下划线
+          const processedTags = [];
+          const translationMap = []; // 记录哪些标签需要翻译
+          
+          for (let i = 0; i < tags.length; i++) {
+            const tag = tags[i];
+            const trimmedTag = tag.trim();
+            
+            // 检查是否为artist:前缀（不区分大小写）
+            if (trimmedTag.toLowerCase().startsWith('artist:')) {
+              // artist:前缀的标签不翻译，直接保持原样
+              processedTags.push(trimmedTag);
+              translationMap.push({ needsTranslation: false, originalIndex: i });
+            } else {
+              // 其他标签：将下划线替换为空格用于翻译
+              const normalizedTag = trimmedTag.replace(/_/g, ' ');
+              processedTags.push(normalizedTag);
+              translationMap.push({ needsTranslation: true, originalIndex: i, originalTag: trimmedTag });
+            }
+          }
+          
+          // 只翻译需要翻译的标签
+          const tagsToTranslate = processedTags.filter((_, index) => translationMap[index].needsTranslation);
+          const translationResults = tagsToTranslate.length > 0 ? await this.translateWithCache(tagsToTranslate) : [];
+          
+          // 重新组装结果
+          const finalResults = [];
+          let translationIndex = 0;
+          
+          for (let i = 0; i < processedTags.length; i++) {
+            const mapInfo = translationMap[i];
+            if (mapInfo.needsTranslation) {
+              finalResults.push(translationResults[translationIndex] || mapInfo.originalTag);
+              translationIndex++;
+            } else {
+              // artist:前缀的标签直接使用原标签
+              finalResults.push(mapInfo.originalTag || processedTags[i]);
+            }
+          }
+          
+          // 调试输出：记录实际翻译的词汇
+          this.logTranslationResults(tags, finalResults);
+          
+          return finalResults;
         } catch (error) {
           console.warn('翻译失败:', error);
           return tags;
+        }
+      },
+      
+      // 调试输出翻译结果
+      logTranslationResults(originalTags, translatedTags) {
+        const newTranslations = [];
+        
+        for (let i = 0; i < originalTags.length; i++) {
+          const original = originalTags[i];
+          const translated = translatedTags[i];
+          
+          // 只记录未命中缓存的新翻译（不等于原文且不在本地缓存中）
+          if (original !== translated && translated && !this.getCachedTranslation(original)) {
+            newTranslations.push(`"${original}": "${translated}"`);
+          }
+        }
+        
+        if (newTranslations.length > 0) {
+          console.log(`NovelAI新翻译(${newTranslations.length}): ${newTranslations.join(', ')}`);
         }
       },
 
